@@ -1,54 +1,86 @@
 # Pimbastic Esports
 
-Projeto PHP com modelagem de dominio para apostas em eSports e persistencia em MySQL.
-Entrega 2 implementada com criacao de banco/tabelas e formularios de cadastro.
+Sistema PHP para cadastro de campeonatos, times, jogos, clientes e apostas em eSports, com persistencia em MySQL.
 
-## Estrutura
+## Visao geral da Entrega 2
 
-- `src/Application/Forms`: servico de formularios e regras de cadastro
-- `src/Domain/Enum`: enums do dominio (`TipoEscolhido`, `StatusAposta`)
-- `src/Domain/Entity`: entidades (`Cliente`, `Aposta`, `Jogo`, etc.)
-- `src/Infrastructure/Database`: conector PDO
-- `database/schema.sql`: script de criacao do banco e tabelas
-- `public/index.php`: dashboard com status do banco e formularios de cadastro
-- `scripts/init_schema.php`: aplicacao manual do schema via CLI
+- Dashboard inicial com status do banco e resumo dos cadastros
+- Formularios separados por pagina (navegacao por links)
+- Validacao no backend (PHP) para os campos principais
+- Relacionamentos entre entidades (campeonato/time/jogo/cliente/aposta)
+- Preenchimento automatico de odd no formulario de aposta com base no jogo escolhido
 
-## Funcionalidades da Entrega 2
+## Estrutura principal
 
-- Cadastro de campeonato
-- Cadastro de time
-- Cadastro de jogo (com relacionamento campeonato/time)
-- Cadastro de cliente
-- Cadastro de aposta (com relacionamento cliente/jogo)
-- Lista das ultimas apostas na tela principal
+- `public/index.php`: dashboard principal
+- `public/formularios/`: paginas de formulario
+	- `campeonato.php`
+	- `time.php`
+	- `jogo.php`
+	- `cliente.php`
+	- `aposta.php`
+- `src/Application/Forms/FormsService.php`: regras de negocio e persistencia dos formularios
+- `src/Infrastructure/Database/DatabaseConnector.php`: conexao PDO
+- `database/schema.sql`: criacao das tabelas
+- `compose.yaml`: ambiente Docker (app + MySQL)
 
-## Subir com Docker
+## Requisitos
+
+- Docker Desktop (ou Docker Engine + Compose)
+- Porta `8080` livre para a aplicacao
+- Porta `3306` livre para o MySQL (opcional, pois esta exposta no compose)
+
+## Como executar
+
+1. Entre na pasta do projeto:
+
+```bash
+cd pimbastic_esports
+```
+
+2. Suba os containers:
 
 ```bash
 docker compose up --build
 ```
 
-A aplicacao fica em `http://localhost:8080`.
+3. Acesse no navegador:
 
-## Variaveis de ambiente da aplicacao
-
-- `DB_HOST` (padrao `127.0.0.1`)
-- `DB_PORT` (padrao `3306`)
-- `DB_NAME` (padrao `pimbastic_esports`)
-- `DB_USER` (padrao `root`)
-- `DB_PASS` (padrao vazio)
-- `DB_CHARSET` (padrao `utf8mb4`)
-
-## Aplicar schema manualmente (opcional)
-
-```bash
-php scripts/init_schema.php
+```text
+http://localhost:8080
 ```
 
-## Fluxo sugerido para demonstracao
+## Reset do banco (quando precisar)
 
-1. Suba o ambiente com Docker.
-2. Acesse `http://localhost:8080`.
-3. Cadastre primeiro campeonatos, times e clientes.
-4. Cadastre jogos usando os relacionamentos.
-5. Cadastre apostas e mostre a lista de ultimas apostas.
+Se quiser limpar dados antigos e recriar tudo do zero:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+## Fluxo de demonstracao (para apresentar)
+
+1. Abrir o dashboard (`/`) e mostrar status ONLINE do banco.
+2. Clicar em `Novo Campeonato` e cadastrar 1 item.
+3. Clicar em `Novo Time` e cadastrar 2 times.
+4. Clicar em `Novo Cliente` e cadastrar 1 cliente.
+5. Clicar em `Novo Jogo` e vincular campeonato + dois times.
+6. Clicar em `Nova Aposta`, escolher cliente/jogo/tipo e mostrar odd preenchida automaticamente.
+7. Voltar ao dashboard e mostrar os dados atualizados.
+
+## Roteiro rapido para o grupo (fala sugerida)
+
+- Pessoa 1: contexto do problema e arquitetura (dashboard + service + banco)
+- Pessoa 2: execucao com Docker e estrutura de pastas
+- Pessoa 3: demonstracao dos cadastros encadeados
+- Pessoa 4: validacoes no PHP e odd automatica na aposta
+
+## Problemas comuns
+
+- `docker: command not found`:
+	- Docker nao esta instalado ou nao foi iniciado.
+- Erro de porta ocupada:
+	- altere a porta no `compose.yaml` (ex.: `8081:80`) e acesse `http://localhost:8081`.
+- Banco com dados antigos:
+	- rode `docker compose down -v` antes de subir novamente.
