@@ -2,25 +2,49 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/src/Infrastructure/Database/DatabaseConnector.php';
+require_once dirname(__DIR__) . '/src/Application/Forms/FormsService.php';
 
+use PimbasticEsports\Application\Forms\FormsService;
 use PimbasticEsports\Infrastructure\Database\DatabaseConnector;
+
+$feedbackType = isset($_GET['feedback_type']) ? (string) $_GET['feedback_type'] : null;
+$feedbackMessage = isset($_GET['feedback_message']) ? (string) $_GET['feedback_message'] : null;
 
 $dbStatus = 'offline';
 $databaseTime = null;
+$isOnline = false;
+
+$campeonatos = [];
+$times = [];
+$clientes = [];
+$jogos = [];
 
 try {
     $connector = new DatabaseConnector();
     $pdo = $connector->getConnection();
+    $formsService = new FormsService($pdo);
     $result = $pdo->query('SELECT NOW() AS server_time')->fetch();
 
     $dbStatus = 'online';
     $databaseTime = $result['server_time'] ?? null;
+    $isOnline = true;
+
+    $formsService->handleSubmission($_SERVER, $_POST);
+    $viewData = $formsService->fetchViewData();
+    $campeonatos = $viewData['campeonatos'];
+    $times = $viewData['times'];
+    $clientes = $viewData['clientes'];
+    $jogos = $viewData['jogos'];
 } catch (Throwable $e) {
     $dbStatus = 'offline';
     $databaseTime = null;
-}
+    $isOnline = false;
 
-$isOnline = $dbStatus === 'online';
+    if ($feedbackMessage === null) {
+        $feedbackType = 'error';
+        $feedbackMessage = 'Banco de dados indisponivel. Verifique o ambiente.';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -73,7 +97,7 @@ $isOnline = $dbStatus === 'online';
         }
 
         .container {
-            width: min(1100px, 92vw);
+            width: min(1140px, 92vw);
             margin: 0 auto;
             padding: 40px 0 56px;
             position: relative;
@@ -174,7 +198,7 @@ $isOnline = $dbStatus === 'online';
         .grid {
             margin-top: 24px;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 16px;
         }
 
@@ -190,10 +214,6 @@ $isOnline = $dbStatus === 'online';
             animation-delay: 120ms;
         }
 
-        .card:nth-child(3) {
-            animation-delay: 240ms;
-        }
-
         .card h3 {
             margin: 0 0 8px;
             font-size: 18px;
@@ -206,13 +226,121 @@ $isOnline = $dbStatus === 'online';
             font-size: 15px;
         }
 
-        .brand {
+        .btn-link {
+            display: inline-block;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            margin: 10px 0;
+            transition: color 200ms ease;
+        }
+
+        .btn-link:hover {
+            color: var(--accent-2);
+        }
+
+        .list-small {
+            margin-top: 8px;
+            font-size: 13px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .list-item {
+            color: var(--muted);
+            padding: 3px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
             margin-top: 26px;
             opacity: 0.8;
             font-size: 13px;
             letter-spacing: 0.08em;
             text-transform: uppercase;
             color: var(--muted);
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            font-size: 14px;
+            animation: rise 650ms ease-out both;
+        }
+
+        .feedback-success {
+            background: rgba(16, 185, 129, 0.12);
+            border-color: rgba(16, 185, 129, 0.45);
+            color: #bbf7d0;
+        }
+
+        .feedback-error {
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.45);
+            color: #fecaca;
+        }
+
+        .forms-wrap {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .form-panel {
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .form-panel h3 {
+            margin: 0 0 12px;
+            font-size: 19px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        label {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            padding: 10px 12px;
+            font-family: "Chakra Petch", sans-serif;
+            font-size: 14px;
+        }
+
+        select option {
+            color: #0b1220;
+        }
+
+        button {
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(120deg, var(--accent), var(--accent-2));
+            color: #051220;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            transition: transform 180ms ease, filter 180ms ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.06);
         }
 
         @keyframes rise {
@@ -232,6 +360,10 @@ $isOnline = $dbStatus === 'online';
             }
 
             .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .forms-wrap {
                 grid-template-columns: 1fr;
             }
 
@@ -257,7 +389,7 @@ $isOnline = $dbStatus === 'online';
                 </span>
                 <h1>Pimbastic Esports</h1>
                 <p class="subtitle">
-                    Acompanhe campeonatos, resultados e apostas com visual competitivo e status em tempo real da infraestrutura.
+                    Cadastre campeonatos, jogos, clientes e apostas em um fluxo simples para demonstracao do sistema.
                 </p>
                 <p class="brand">Built for high-intensity matches</p>
             </article>
@@ -271,28 +403,64 @@ $isOnline = $dbStatus === 'online';
                 </div>
 
                 <div class="stat">
-                    <p class="label">Horário do Servidor</p>
+                    <p class="label">Horario do Servidor</p>
                     <p class="value">
-                        <?= $databaseTime !== null ? htmlspecialchars((string)$databaseTime, ENT_QUOTES, 'UTF-8') : '--' ?>
+                        <?= $databaseTime !== null ? htmlspecialchars((string) $databaseTime, ENT_QUOTES, 'UTF-8') : '--' ?>
                     </p>
                 </div>
             </aside>
         </section>
 
+        <?php if ($feedbackMessage !== null): ?>
+            <section class="feedback <?= $feedbackType === 'success' ? 'feedback-success' : 'feedback-error' ?>">
+                <?= htmlspecialchars($feedbackMessage, ENT_QUOTES, 'UTF-8') ?>
+            </section>
+        <?php endif; ?>
+
         <section class="grid">
             <article class="card">
                 <h3>Campeonatos</h3>
-                <p>Estruture temporadas, fases eliminatórias e acompanhe performance por time.</p>
+                <p><?= count($campeonatos) ?> campeonato(s) cadastrado(s)</p>
+                <a href="formularios/campeonato.php" class="btn-link">Novo Campeonato →</a>
+                <div class="list-small">
+                    <?php foreach ($campeonatos as $c): ?>
+                        <div class="list-item">• <?= htmlspecialchars($c['nome'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <?php endforeach; ?>
+                </div>
+            </article>
+
+            <article class="card">
+                <h3>Times</h3>
+                <p><?= count($times) ?> time(s) cadastrado(s)</p>
+                <a href="formularios/time.php" class="btn-link">Novo Time →</a>
+                <div class="list-small">
+                    <?php foreach ($times as $t): ?>
+                        <div class="list-item">• <?= htmlspecialchars($t['nome'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <?php endforeach; ?>
+                </div>
+            </article>
+
+            <article class="card">
+                <h3>Clientes</h3>
+                <p><?= count($clientes) ?> cliente(s) cadastrado(s)</p>
+                <a href="formularios/cliente.php" class="btn-link">Novo Cliente →</a>
+                <div class="list-small">
+                    <?php foreach ($clientes as $cl): ?>
+                        <div class="list-item">• <?= htmlspecialchars($cl['nome'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <?php endforeach; ?>
+                </div>
+            </article>
+
+            <article class="card">
+                <h3>Jogos</h3>
+                <p><?= count($jogos) ?> jogo(s) cadastrado(s)</p>
+                <a href="formularios/jogo.php" class="btn-link">Novo Jogo →</a>
             </article>
 
             <article class="card">
                 <h3>Apostas</h3>
-                <p>Registre palpites com status claro e trilha para validação de resultados.</p>
-            </article>
-
-            <article class="card">
-                <h3>Resultados</h3>
-                <p>Centralize placares e mantenha histórico confiável para análise posterior.</p>
+                <p>Registre apostas com cliente, odd e status</p>
+                <a href="formularios/aposta.php" class="btn-link">Nova Aposta →</a>
             </article>
         </section>
     </main>
