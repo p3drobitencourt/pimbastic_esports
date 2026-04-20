@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado de Apostas - Pimbastic Esports</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-1: #081019;
+            --bg-2: #132737;
+            --accent: #10b981;
+            --accent-2: #22d3ee;
+            --text: #f4f7fb;
+            --muted: #b9c2cf;
+            --card: rgba(10, 20, 32, 0.7);
+            --border: rgba(255, 255, 255, 0.14);
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: "Chakra Petch", sans-serif;
+            background: linear-gradient(140deg, var(--bg-1), var(--bg-2));
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-family: "Bebas Neue", sans-serif;
+            font-size: 42px;
+            margin-top: 0;
+            letter-spacing: 0.03em;
+        }
+
+        .feedback-success {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            color: #bbf7d0;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .game-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .game-header {
+            font-size: 13px;
+            color: var(--accent-2);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .teams {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .odds-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .odds-row button {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: var(--text);
+            padding: 12px 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-family: "Chakra Petch", sans-serif;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .odds-row button span.label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .odds-row button span.odd-val {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .odds-row button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .odds-row button.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #051220;
+        }
+
+        .odds-row button.active span.label {
+            color: rgba(5, 18, 32, 0.7);
+        }
+
+        .bet-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .bet-input-group input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: "Chakra Petch", sans-serif;
+        }
+
+        .btn-bet {
+            background: linear-gradient(120deg, var(--accent), var(--accent-2));
+            color: #051220;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: "Chakra Petch", sans-serif;
+            transition: transform 0.2s;
+        }
+
+        .btn-bet:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+<main class="container">
+    <h1>Mercado de Apostas</h1>
+
+    <?php if (isset($_GET['success'])): ?>
+        <div class="feedback-success">
+            Sua aposta foi registrada com sucesso!
+        </div>
+    <?php endif; ?>
+
+    <div class="game-grid">
+        <?php foreach ($viewData['jogos'] as $jogo): ?>
+            <div class="game-card">
+                <div class="game-header">
+                    <?= htmlspecialchars($jogo['campeonato']) ?> • <?= date('d/m H:i', strtotime($jogo['data_horario'])) ?>
+                </div>
+                
+                <div class="teams">
+                    <?= htmlspecialchars($jogo['casa']) ?> <br>
+                    <span style="color: var(--muted); font-size: 14px;">vs</span><br>
+                    <?= htmlspecialchars($jogo['fora']) ?>
+                </div>
+                
+                <form method="POST" action="/apostar.php">
+                    <input type="hidden" name="jogo_id" value="<?= $jogo['id'] ?>">
+                    <input type="hidden" name="tipo_escolhido" class="tipo-input" required>
+                    <input type="hidden" name="odd_escolhida" class="odd-input" required>
+                    
+                    <div class="odds-row">
+                        <button type="button" onclick="selectOdd(this, <?= $jogo['odd_casa'] ?>, 'vitoria_casa')">
+                            <span class="label">Casa</span>
+                            <span class="odd-val"><?= $jogo['odd_casa'] ?></span>
+                        </button>
+                        <button type="button" onclick="selectOdd(this, <?= $jogo['odd_empate'] ?>, 'empate')">
+                            <span class="label">Empate</span>
+                            <span class="odd-val"><?= $jogo['odd_empate'] ?></span>
+                        </button>
+                        <button type="button" onclick="selectOdd(this, <?= $jogo['odd_fora'] ?>, 'vitoria_fora')">
+                            <span class="label">Fora</span>
+                            <span class="odd-val"><?= $jogo['odd_fora'] ?></span>
+                        </button>
+                    </div>
+                    
+                    <div class="bet-input-group">
+                        <input type="number" name="valor" placeholder="R$ 0,00" step="0.01" min="1" required>
+                        <button type="submit" class="btn-bet">Apostar</button>
+                    </div>
+                </form>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</main>
+
+<script>
+    function selectOdd(btn, oddValue, tipo) {
+        const form = btn.closest('form');
+        
+        // Limpa a seleção anterior deste jogo específico
+        form.querySelectorAll('.odds-row button').forEach(b => b.classList.remove('active'));
+        
+        // Marca o botão clicado
+        btn.classList.add('active');
+        
+        // Preenche os inputs invisíveis que serão enviados ao PHP
+        form.querySelector('.tipo-input').value = tipo;
+        form.querySelector('.odd-input').value = oddValue;
+    }
+</script>
+
+</body>
+</html>
