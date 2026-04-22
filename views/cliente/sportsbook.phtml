@@ -150,9 +150,16 @@
             cursor: pointer;
             font-family: "Chakra Petch", sans-serif;
             transition: transform 0.2s;
+            opacity: 0.5;
+            pointer-events: none; /* Bloqueia clique via CSS inicialmente */
+        }
+        
+        .btn-bet.enabled {
+            opacity: 1;
+            pointer-events: auto; /* Libera o clique */
         }
 
-        .btn-bet:hover {
+        .btn-bet:hover.enabled {
             transform: translateY(-2px);
         }
     </style>
@@ -164,7 +171,7 @@
 
     <?php if (isset($_GET['success'])): ?>
         <div class="feedback-success">
-            Sua aposta foi registrada com sucesso!
+            Aposta registrada com sucesso e gravada no banco de dados!
         </div>
     <?php endif; ?>
 
@@ -181,10 +188,10 @@
                     <?= htmlspecialchars($jogo['fora']) ?>
                 </div>
                 
-                <form method="POST" action="/apostar.php">
+                <form method="POST" action="/apostar.php" onsubmit="return validarAposta(this)">
                     <input type="hidden" name="jogo_id" value="<?= $jogo['id'] ?>">
-                    <input type="hidden" name="tipo_escolhido" class="tipo-input" required>
-                    <input type="hidden" name="odd_escolhida" class="odd-input" required>
+                    <input type="hidden" name="tipo_escolhido" class="tipo-input">
+                    <input type="hidden" name="odd_escolhida" class="odd-input">
                     
                     <div class="odds-row">
                         <button type="button" onclick="selectOdd(this, <?= $jogo['odd_casa'] ?>, 'vitoria_casa')">
@@ -215,15 +222,25 @@
     function selectOdd(btn, oddValue, tipo) {
         const form = btn.closest('form');
         
-        // Limpa a seleção anterior deste jogo específico
+        // Remove active de todos
         form.querySelectorAll('.odds-row button').forEach(b => b.classList.remove('active'));
-        
-        // Marca o botão clicado
+        // Adiciona active no clicado
         btn.classList.add('active');
         
-        // Preenche os inputs invisíveis que serão enviados ao PHP
+        // Injeta os valores pro POST
         form.querySelector('.tipo-input').value = tipo;
         form.querySelector('.odd-input').value = oddValue;
+        
+        // Libera o botão de submit apenas após uma odd ser selecionada
+        form.querySelector('.btn-bet').classList.add('enabled');
+    }
+
+    function validarAposta(form) {
+        if (!form.querySelector('.tipo-input').value) {
+            alert("Ação inválida. Selecione uma Odd (Casa, Empate ou Fora) antes de apostar.");
+            return false;
+        }
+        return true;
     }
 </script>
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace PimbasticEsports\Infrastructure\Repositories;
 
 use PDO;
+use Exception;
 
 final class ApostaRepository
 {
@@ -25,16 +26,45 @@ final class ApostaRepository
 
     public function salvarAposta(array $dados): bool
     {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO aposta (cliente_id, jogo_id, valor, tipo_escolhido, odd_escolhida, status) 
-             VALUES (:cli, :jog, :val, :tip, :odd, "aberta")'
-        );
-        return $stmt->execute([
-            ':cli' => $dados['cliente_id'],
-            ':jog' => $dados['jogo_id'],
-            ':val' => $dados['valor'],
-            ':tip' => $dados['tipo'],
-            ':odd' => $dados['odd']
-        ]);
+        $this->pdo->beginTransaction();
+
+        try {
+            // 1. Lock na linha do saldo
+            $stmtLock = $this->pdo->prepare('SELECT saldo FROM carteira WHERE cliente_id = :cli FOR UPDATE');
+            $stmtLock->execute([':cli' => $dados['cliente_id']]);
+            $saldoAtual = (float) $stmtLock->fetchColumn();
+
+            if ($saldoAtual < $dados['valor']) {
+                throw new Exception("Saldo insuficiente.");
+            }
+
+            // 2. Deduz o saldo atômicamente
+            $stmtDebito = $this->pdo->prepare('UPDATE carteira SET saldo = saldo - :val WHERE cliente_id = :cli');
+            $stmtDebito->execute([
+                ':val' => $dados['valor'],
+                ':cli' => $dados['cliente_id']
+            ]);
+
+            // 3. Persiste a aposta
+            $stmtAposta = $this->pdo->prepare(
+                'INSERT INTO aposta (cliente_id, jogo_id, valor, tipo_escolhido, odd_escolhida, status) 
+                 VALUES (:cli, :jog, :val, :tip, :odd, "aberta")'
+            );
+            $stmtAposta->execute([
+                ':cli' => $dados['cliente_id'],
+                ':jog' => $dados['jogo_id'],
+                ':val' => $dados['valor'],
+                ':tip' => $dados['tipo'],
+                ':odd' => $dados['odd']
+            ]);
+
+            $this->pdo->commit();
+            return true;
+
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            // Em produção, propaga-se a exceção para o Controller exibir erro na View.
+            return false;
+        }
     }
 }

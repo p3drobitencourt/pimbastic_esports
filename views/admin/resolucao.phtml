@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Liquidação Financeira - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { background: #081019; color: #f4f7fb; font-family: "Chakra Petch"; padding: 40px; }
+        .card { background: #132737; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #10b981; }
+        button { background: #10b981; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        select { padding: 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Liquidação de Jogos e Payout</h1>
+    
+    <?php if (isset($_GET['success'])): ?>
+        <div style="color: #10b981; margin-bottom: 20px;">✓ Apostas liquidadas e saldo pago nas carteiras.</div>
+    <?php endif; ?>
+
+    <?php if (empty($viewData['jogos'])): ?>
+        <p>Nenhum jogo aguardando resolução (Aguardando término das partidas reais).</p>
+    <?php endif; ?>
+
+    <?php foreach ($viewData['jogos'] as $jogo): ?>
+        <div class="card">
+            <h3><?= $jogo['campeonato'] ?>: <?= $jogo['casa'] ?> vs <?= $jogo['fora'] ?></h3>
+            <p>Horário: <?= $jogo['data_horario'] ?></p>
+            
+            <form method="POST" action="/resolver.php">
+                <input type="hidden" name="jogo_id" value="<?= $jogo['id'] ?>">
+                <label>Resultado Oficial da Partida:</label>
+                <select name="resultado_real" required>
+                    <option value="">Selecione...</option>
+                    <option value="casa">Vitória: <?= $jogo['casa'] ?></option>
+                    <option value="empate">Empate</option>
+                    <option value="fora">Vitória: <?= $jogo['fora'] ?></option>
+                </select>
+                <button type="submit">Encerrar e Pagar Vencedores</button>
+            </form>
+        </div>
+    <?php endforeach; ?>
+</body>
+</html>
