@@ -1,6 +1,24 @@
 <?php
 declare(strict_types=1);
 
+session_start();
+
+// Verifica se o usuário NÃO está logado
+if (!isset($_SESSION['logado']) || $_SESSION['logado'] !== true) {
+    // Redireciona para a tela de login
+    header("Location: login.php");
+    exit;
+}
+
+// Se o usuário for um 'cliente', ele não deve ver a index (que é do admin)
+if ($_SESSION['tipo_usuario'] !== 'admin') {
+    header("Location: painel_cliente.php");
+    exit;
+}
+
+// ... restante do seu código (declare, require_once, etc)
+
+
 require_once dirname(__DIR__) . '/src/Infrastructure/Database/DatabaseConnector.php';
 require_once dirname(__DIR__) . '/src/Application/Forms/FormsService.php';
 
