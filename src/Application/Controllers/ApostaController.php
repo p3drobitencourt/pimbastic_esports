@@ -13,6 +13,8 @@ final class ApostaController
     {
         return [
             'jogos' => $this->repo->getMercadoAtivo(),
+            'cliente' => $this->repo->getDadosCliente($clienteId),
+            'historico' => $this->repo->getHistoricoApostas($clienteId),
             'cliente_id' => $clienteId
         ];
     }
@@ -27,9 +29,31 @@ final class ApostaController
             'odd'        => (float)$post['odd_escolhida']
         ];
 
+        // Se retornar true (transação commitada), success. Senão, error.
         if ($this->repo->salvarAposta($payload)) {
-            header("Location: /apostar.php?success=1");
+            header("Location: apostar.php?success=1");
+            exit;
+        } else {
+            header("Location: apostar.php?error=saldo_insuficiente");
             exit;
         }
+    }
+
+    public function processarDeposito(array $post, int $clienteId): void
+    {
+        $valor = (float) ($post['valor_deposito'] ?? 0);
+
+        if ($valor <= 0) {
+            header("Location: apostar.php?error=valor_invalido");
+            exit;
+        }
+
+        if ($this->repo->depositar($clienteId, $valor)) {
+            header("Location: apostar.php?success_deposito=1");
+            exit;
+        }
+
+        header("Location: apostar.php?error=falha_banco");
+        exit;
     }
 }

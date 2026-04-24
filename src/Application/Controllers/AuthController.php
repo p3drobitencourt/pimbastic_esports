@@ -21,6 +21,7 @@ final class AuthController
         $_SESSION['usuario_id'] = $usuario['id'];
         $_SESSION['tipo_usuario'] = $usuario['perfil']; 
         $_SESSION['nome'] = $usuario['nome'];
+        $_SESSION['cliente_id'] = $usuario['cliente_id'];
 
         // LÓGICA DE REDIRECIONAMENTO POR PERFIL
         if ($usuario['perfil'] === 'admin') {
