@@ -12,16 +12,14 @@ final class ResolucaoRepository
 
     public function getJogosPendentes(): array
     {
-        // Retorna apenas jogos que já começaram/terminaram e possuem apostas abertas
         return $this->pdo->query(
-            "SELECT DISTINCT j.id, c.nome AS campeonato, tc.nome AS casa, tf.nome AS fora, j.data_horario
+            "SELECT j.id, c.nome AS campeonato, tc.nome AS casa, tf.nome AS fora, j.data_horario,
+                    (SELECT COUNT(*) FROM aposta a WHERE a.jogo_id = j.id AND a.status = 'aberta') as apostas_abertas
              FROM jogo j
              JOIN campeonato c ON c.id = j.campeonato_id
              JOIN time tc ON tc.id = j.time_casa_id
              JOIN time tf ON tf.id = j.time_fora_id
-             JOIN aposta a ON a.jogo_id = j.id
-             WHERE j.data_horario <= NOW() AND a.status = 'aberta'
-             ORDER BY j.data_horario ASC"
+             ORDER BY j.data_horario DESC"
         )->fetchAll();
     }
 
@@ -30,28 +28,37 @@ final class ResolucaoRepository
         $this->pdo->beginTransaction();
 
         try {
-            // 1. Marca as apostas perdedoras
-            $stmtPerdidas = $this->pdo->prepare(
-                "UPDATE aposta SET status = 'perdida' 
-                 WHERE jogo_id = :jog AND tipo_escolhido != :res AND status = 'aberta'"
+            // 1. DQL com Row-level Lock para as apostas vencedoras
+            $stmtVencedoras = $this->pdo->prepare(
+                "SELECT id, cliente_id, valor, odd_escolhida FROM aposta 
+                 WHERE jogo_id = :jog AND tipo_escolhido = :res AND status = 'aberta' FOR UPDATE"
             );
-            $stmtPerdidas->execute([':jog' => $jogoId, ':res' => $resultadoVencedor]);
+            $stmtVencedoras->execute([':jog' => $jogoId, ':res' => $resultadoVencedor]);
+            $apostasVencedoras = $stmtVencedoras->fetchAll();
 
-            // 2. Marca as apostas vencedoras
-            $stmtVencidas = $this->pdo->prepare(
-                "UPDATE aposta SET status = 'vencida' 
-                 WHERE jogo_id = :jog AND tipo_escolhido = :res AND status = 'aberta'"
+            // 2. Liquidação financeira individual (Resolve múltiplas entradas por cliente)
+            $stmtPagar = $this->pdo->prepare(
+                "UPDATE cliente SET saldo_carteira = saldo_carteira + :premio WHERE id = :cliente_id"
             );
-            $stmtVencidas->execute([':jog' => $jogoId, ':res' => $resultadoVencedor]);
+            
+            foreach ($apostasVencedoras as $aposta) {
+                $premio = $aposta['valor'] * $aposta['odd_escolhida'];
+                $stmtPagar->execute([
+                    ':premio' => $premio,
+                    ':cliente_id' => $aposta['cliente_id']
+                ]);
+            }
 
-            // 3. Credita o Payout (Valor * Odd) nas carteiras dos vencedores
-            $stmtPayout = $this->pdo->prepare(
-                "UPDATE carteira c
-                 JOIN aposta a ON c.cliente_id = a.cliente_id
-                 SET c.saldo = c.saldo + (a.valor * a.odd_escolhida)
-                 WHERE a.jogo_id = :jog AND a.status = 'vencida'"
+            // 3. Atualização de Status DML
+            $stmtUpdateVencidas = $this->pdo->prepare(
+                "UPDATE aposta SET status = 'vencida' WHERE jogo_id = :jog AND tipo_escolhido = :res AND status = 'aberta'"
             );
-            $stmtPayout->execute([':jog' => $jogoId]);
+            $stmtUpdateVencidas->execute([':jog' => $jogoId, ':res' => $resultadoVencedor]);
+
+            $stmtUpdatePerdidas = $this->pdo->prepare(
+                "UPDATE aposta SET status = 'perdida' WHERE jogo_id = :jog AND tipo_escolhido != :res AND status = 'aberta'"
+            );
+            $stmtUpdatePerdidas->execute([':jog' => $jogoId, ':res' => $resultadoVencedor]);
 
             $this->pdo->commit();
             return true;
