@@ -514,9 +514,9 @@ try {
             </article>
 
             <article class="card">
-                <h3>Apostas</h3>
-                <p>Consulte registros no lado do cliente ou via painel isolado</p>
-                <a href="#" class="btn-link" style="color: var(--muted); cursor: not-allowed; text-decoration: line-through;">Nova Aposta (Desativada no Dashboard)</a>
+                <h3>Liquidação Financeira</h3>
+                <p>Encerre as partidas e pague os prêmios dos clientes vencedores.</p>
+                <a href="resolver.php" class="btn-link">Resolver Partidas →</a>
             </article>
         </section>
     </main>

@@ -2,8 +2,9 @@
 declare(strict_types=1);
 
 session_start();
+// CORREÇÃO: Redirecionamento aponta para a raiz pública
 if (!isset($_SESSION['logado']) || $_SESSION['tipo_usuario'] !== 'admin') {
-    header("Location: formularios/login.php?feedback_type=error&feedback_message=Acesso negado.");
+    header("Location: /login.php?erro=acesso_negado");
     exit;
 }
 
