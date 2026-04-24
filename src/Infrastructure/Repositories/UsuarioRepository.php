@@ -66,4 +66,47 @@ final class UsuarioRepository
             ':perfil' => $perfil
         ]);
     }
+
+    public function findAll(): array
+    {
+        return $this->pdo->query('SELECT id, nome, email, perfil, cliente_id FROM usuario ORDER BY id DESC')->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function findById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT id, nome, email, perfil, cliente_id FROM usuario WHERE id = :id');
+        $stmt->execute([':id' => $id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $result ?: null;
+    }
+
+    public function update(int $id, string $nome, string $email, string $perfil, ?string $senha = null): bool
+    {
+        if ($senha) {
+            $hash = password_hash($senha, PASSWORD_DEFAULT);
+            $stmt = $this->pdo->prepare('UPDATE usuario SET nome = :nome, email = :email, perfil = :perfil, senha = :senha WHERE id = :id');
+            return $stmt->execute([
+                ':nome' => $nome,
+                ':email' => $email,
+                ':perfil' => $perfil,
+                ':senha' => $hash,
+                ':id' => $id
+            ]);
+        }
+
+        $stmt = $this->pdo->prepare('UPDATE usuario SET nome = :nome, email = :email, perfil = :perfil WHERE id = :id');
+        return $stmt->execute([
+            ':nome' => $nome,
+            ':email' => $email,
+            ':perfil' => $perfil,
+            ':id' => $id
+        ]);
+    }
+
+    public function delete(int $id): bool
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM usuario WHERE id = :id');
+        return $stmt->execute([':id' => $id]);
+    }
 }

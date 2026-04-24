@@ -6,9 +6,9 @@ session_start();
 require_once dirname(__DIR__) . '/src/Infrastructure/Database/DatabaseConnector.php';
 require_once dirname(__DIR__) . '/src/Infrastructure/Repositories/UsuarioRepository.php'; // ESSA LINHA RESOLVE O ERRO FATAL
 require_once dirname(__DIR__) . '/src/Application/Controllers/AuthController.php';
-require_once dirname(__DIR__) . '/src/Application/Forms/FormsService.php';
+require_once dirname(__DIR__) . '/src/Application/Services/DashboardService.php';
 
-use PimbasticEsports\Application\Forms\FormsService;
+use PimbasticEsports\Application\Services\DashboardService;
 use PimbasticEsports\Infrastructure\Database\DatabaseConnector;
 use PimbasticEsports\Application\Controllers\AuthController;
 
@@ -60,15 +60,14 @@ $jogos = [];
 try {
     $connector = new DatabaseConnector();
     $pdo = $connector->getConnection();
-    $formsService = new FormsService($pdo);
+    $dashboardService = new DashboardService($pdo);
     $result = $pdo->query('SELECT NOW() AS server_time')->fetch();
 
     $dbStatus = 'online';
     $databaseTime = $result['server_time'] ?? null;
     $isOnline = true;
 
-    $formsService->handleSubmission($_SERVER, $_POST);
-    $viewData = $formsService->fetchViewData();
+    $viewData = $dashboardService->fetchViewData();
     $campeonatos = $viewData['campeonatos'];
     $times = $viewData['times'];
     $clientes = $viewData['clientes'];
@@ -470,8 +469,8 @@ try {
         <section class="grid">
             <article class="card">
                 <h3>Campeonatos</h3>
-                <p><?= count($campeonatos) ?> campeonato(s) cadastrado(s)</p>
-                <a href="formularios/campeonato.php" class="btn-link">Novo Campeonato →</a>
+                <p><?= count($campeonatos) ?> últimos campeonato(s)</p>
+                <a href="campeonatos.php" class="btn-link">Gerenciar Campeonatos →</a>
                 <div class="list-small">
                     <?php foreach ($campeonatos as $c): ?>
                         <div class="list-item">• <?= htmlspecialchars($c['nome'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -481,8 +480,8 @@ try {
 
             <article class="card">
                 <h3>Times</h3>
-                <p><?= count($times) ?> time(s) cadastrado(s)</p>
-                <a href="formularios/time.php" class="btn-link">Novo Time →</a>
+                <p><?= count($times) ?> últimos time(s)</p>
+                <a href="times.php" class="btn-link">Gerenciar Times →</a>
                 <div class="list-small">
                     <?php foreach ($times as $t): ?>
                         <div class="list-item">• <?= htmlspecialchars($t['nome'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -491,9 +490,22 @@ try {
             </article>
 
             <article class="card">
-                <h3>Clientes</h3>
-                <p><?= count($clientes) ?> cliente(s) cadastrado(s)</p>
-                <a href="formularios/cliente.php" class="btn-link">Novo Cliente →</a>
+                <h3>Jogos</h3>
+                <p>Lista dos 5 últimos jogo(s) cadastrado(s)</p>
+                <a href="jogos.php" class="btn-link">Gerenciar Jogos →</a>
+            </article>
+
+            <article class="card">
+                <h3>Usuários</h3>
+                <p>Controle de administradores e clientes</p>
+                <a href="usuarios.php" class="btn-link">Gerenciar Usuários →</a>
+            </article>
+
+            <article class="card">
+                <h3>Clientes (Carteira)</h3>
+                <p>Últimos registros ou consultas</p>
+                <!-- Removido o cadastro de formulários/cliente.php -->
+                <a href="#" class="btn-link" style="color: var(--muted); cursor: not-allowed; text-decoration: line-through;">Novo Cliente (Desativado)</a>
                 <div class="list-small">
                     <?php foreach ($clientes as $cl): ?>
                         <div class="list-item">• <?= htmlspecialchars($cl['nome'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -502,15 +514,9 @@ try {
             </article>
 
             <article class="card">
-                <h3>Jogos</h3>
-                <p><?= count($jogos) ?> jogo(s) cadastrado(s)</p>
-                <a href="formularios/jogo.php" class="btn-link">Novo Jogo →</a>
-            </article>
-
-            <article class="card">
                 <h3>Apostas</h3>
-                <p>Registre apostas com cliente, odd e status</p>
-                <a href="formularios/aposta.php" class="btn-link">Nova Aposta →</a>
+                <p>Consulte registros no lado do cliente ou via painel isolado</p>
+                <a href="#" class="btn-link" style="color: var(--muted); cursor: not-allowed; text-decoration: line-through;">Nova Aposta (Desativada no Dashboard)</a>
             </article>
         </section>
     </main>
