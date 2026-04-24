@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+session_start();
+if (!isset($_SESSION['logado']) || $_SESSION['tipo_usuario'] !== 'admin') {
+    header("Location: formularios/login.php?feedback_type=error&feedback_message=Acesso negado.");
+    exit;
+}
+
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);

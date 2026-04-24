@@ -3,27 +3,47 @@ declare(strict_types=1);
 
 session_start();
 
-// Verifica se o usuário NÃO está logado
-if (!isset($_SESSION['logado']) || $_SESSION['logado'] !== true) {
-    // Redireciona para a tela de login
-    header("Location: login.php");
-    exit;
-}
-
-// Se o usuário for um 'cliente', ele não deve ver a index (que é do admin)
-if ($_SESSION['tipo_usuario'] !== 'admin') {
-    header("Location: painel_cliente.php");
-    exit;
-}
-
-// ... restante do seu código (declare, require_once, etc)
-
-
 require_once dirname(__DIR__) . '/src/Infrastructure/Database/DatabaseConnector.php';
+require_once dirname(__DIR__) . '/src/Infrastructure/Repositories/UsuarioRepository.php'; // ESSA LINHA RESOLVE O ERRO FATAL
+require_once dirname(__DIR__) . '/src/Application/Controllers/AuthController.php';
 require_once dirname(__DIR__) . '/src/Application/Forms/FormsService.php';
 
 use PimbasticEsports\Application\Forms\FormsService;
 use PimbasticEsports\Infrastructure\Database\DatabaseConnector;
+use PimbasticEsports\Application\Controllers\AuthController;
+
+// ==========================================
+if (isset($_GET['logout']) && $_GET['logout'] === 'true') {
+    $connector = new DatabaseConnector();
+    $pdo = $connector->getConnection();
+    
+    // Agora o PHP sabe onde está essa classe!
+    $repo = new \PimbasticEsports\Infrastructure\Repositories\UsuarioRepository($pdo);
+    $authController = new AuthController($repo);
+    
+    $authController->logout();
+    exit;
+}
+
+// Verifica se o usuário NÃO está logado
+if (!isset($_SESSION['logado']) || $_SESSION['logado'] !== true) {
+    header("Location: login.php");
+    exit;
+}
+
+// Se o usuário for 'cliente', ele é redirecionado para a tela correta (apostar.php)
+if ($_SESSION['tipo_usuario'] !== 'admin') {
+    header("Location: apostar.php"); // Corrigido de painel_cliente.php para apostar.php
+    exit;
+}
+
+// ==========================================
+// DAQUI PARA BAIXO O SEU CÓDIGO CONTINUA IGUAL...
+// ==========================================
+$feedbackType = isset($_GET['feedback_type']) ? (string) $_GET['feedback_type'] : null;
+$feedbackMessage = isset($_GET['feedback_message']) ? (string) $_GET['feedback_message'] : null;
+
+// ... (restante do arquivo)
 
 $feedbackType = isset($_GET['feedback_type']) ? (string) $_GET['feedback_type'] : null;
 $feedbackMessage = isset($_GET['feedback_message']) ? (string) $_GET['feedback_message'] : null;
@@ -413,6 +433,18 @@ try {
             </article>
 
             <aside class="panel hero-side">
+                
+                <?php if (isset($_SESSION['logado'])): ?>
+                <div class="stat" style="border-bottom: 1px solid rgba(255,255,255,0.14); padding-bottom: 15px; margin-bottom: 15px;">
+                    <p class="label">Operador: <span style="color: #10b981; font-size: 10px; border: 1px solid #10b981; padding: 1px 4px; border-radius: 3px;"><?= strtoupper($_SESSION['tipo_usuario'] ?? '') ?></span></p>
+                    <p class="value" style="color: #22d3ee; font-size: 18px; margin-top: 4px;">
+                        <?= htmlspecialchars($_SESSION['nome'] ?? 'Usuário') ?>
+                    </p>
+                    <a href="?logout=true" class="btn-link" style="color: #ef4444; font-size: 13px; margin-top: 8px; display: inline-block;">
+                        [X] Encerrar Sessão
+                    </a>
+                </div>
+                <?php endif; ?>
                 <div class="stat">
                     <p class="label">Status do Banco</p>
                     <p class="value <?= $isOnline ? 'status-online' : 'status-offline' ?>">

@@ -1,48 +1,39 @@
 <?php
-session_start();
+    session_start();
 
-$erro = null;
+    // Fazemos os requires das classes MVC
+    // Removemos o "/../" pois o dirname(__DIR__) já aponta para a raiz correta do projeto
+    require_once dirname(__DIR__) . '/src/Infrastructure/Database/DatabaseConnector.php';
+    require_once dirname(__DIR__) . '/src/Infrastructure/Repositories/UsuarioRepository.php';
+    require_once dirname(__DIR__) . '/src/Application/Controllers/AuthController.php';
 
-// Lógica de Processamento do Login
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $senha = $_POST['senha'] ?? '';
+    use PimbasticEsports\Infrastructure\Database\DatabaseConnector;
+    use PimbasticEsports\Infrastructure\Repositories\UsuarioRepository;
+    use PimbasticEsports\Application\Controllers\AuthController;
 
-    /* * ==========================================
-     * AQUI ENTRARÁ A SUA CONEXÃO COM O BANCO DE DADOS
-     * ==========================================
-     * Exemplo de como será no futuro:
-     * $stmt = $pdo->prepare("SELECT id, nome, senha_hash, tipo_usuario FROM usuarios WHERE email = :email");
-     * $stmt->execute(['email' => $email]);
-     * $usuario = $stmt->fetch();
-     * * if ($usuario && password_verify($senha, $usuario['senha_hash'])) { ... }
-     */
+    $erro = null;
+    $sucesso = null;
 
-    // MOCK (Dados fictícios para testar a lógica de redirecionamento)
-    if ($email === 'admin@pimbastic.com' && $senha === 'admin') {
-        
-        // Criamos a sessão do Administrador
-        $_SESSION['logado'] = true;
-        $_SESSION['tipo_usuario'] = 'admin';
-        
-        // Redireciona para o painel do Admin (pode ser o seu index.php atual)
-        header("Location: index.php"); 
-        exit;
-
-    } elseif ($email === 'cliente@teste.com' && $senha === 'cliente') {
-        
-        // Criamos a sessão do Cliente
-        $_SESSION['logado'] = true;
-        $_SESSION['tipo_usuario'] = 'cliente';
-        
-        // Redireciona para o painel do Cliente
-        header("Location: painel_cliente.php"); 
-        exit;
-
-    } else {
+    if (isset($_GET['erro'])) {
         $erro = 'Credenciais inválidas. Tente novamente.';
     }
-}
+    if (isset($_GET['sucesso'])) {
+        $sucesso = 'Cadastro realizado com sucesso! Faça seu login.';
+    }
+
+    // Se o formulário foi enviado, passamos a bola para o Controller
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $email = $_POST['email'] ?? '';
+        $senha = $_POST['senha'] ?? '';
+
+        $connector = new DatabaseConnector();
+        $pdo = $connector->getConnection();
+        
+        $repo = new UsuarioRepository($pdo);
+        $controller = new AuthController($repo);
+        
+        $controller->processarLogin($email, $senha);
+    }
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -215,6 +206,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
+            
+
             <form method="POST" action="login.php" class="form-grid">
                 <div>
                     <label for="email">E-mail</label>
@@ -228,6 +221,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <button type="submit">ENTRAR NO SISTEMA</button>
             </form>
+            <p style="margin-top: 25px; font-size: 15px; color: var(--muted); text-align: center;">
+                Não tem uma conta? 
+                <a href="cadastro.php" style="color: var(--accent); text-decoration: none; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--accent-2)'" onmouseout="this.style.color='var(--accent)'">
+                    Cadastre-se
+                </a>
+            </p>
         </main>
     </div>
 </body>
