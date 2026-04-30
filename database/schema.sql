@@ -46,3 +46,13 @@ CREATE TABLE IF NOT EXISTS aposta (
     CONSTRAINT fk_aposta_cliente FOREIGN KEY (cliente_id) REFERENCES cliente(id) ON DELETE RESTRICT,
     CONSTRAINT fk_aposta_jogo FOREIGN KEY (jogo_id) REFERENCES jogo(id) ON DELETE RESTRICT
 );
+
+CREATE TABLE IF NOT EXISTS usuario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL, 
+    perfil ENUM('admin', 'cliente') NOT NULL DEFAULT 'cliente',
+    cliente_id INT UNIQUE, 
+    CONSTRAINT fk_usuario_cliente FOREIGN KEY (cliente_id) REFERENCES cliente(id) ON DELETE CASCADE
+);

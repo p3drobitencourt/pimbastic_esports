@@ -33,17 +33,49 @@
             margin: 0 auto;
         }
 
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         h1 {
             font-family: "Bebas Neue", sans-serif;
             font-size: 42px;
             margin-top: 0;
+            margin-bottom: 0;
             letter-spacing: 0.03em;
+        }
+
+        .btn-logout {
+            color: #ef4444;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            border: 1px solid #ef4444;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.1);
         }
 
         .feedback-success {
             background: rgba(16, 185, 129, 0.12);
             border: 1px solid rgba(16, 185, 129, 0.45);
             color: #bbf7d0;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .feedback-error {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.45);
+            color: #fecaca;
             padding: 14px 16px;
             border-radius: 12px;
             margin-bottom: 24px;
@@ -162,18 +194,143 @@
         .btn-bet:hover.enabled {
             transform: translateY(-2px);
         }
+
+        /* --- ADIÇÕES MODULARES (ISOLADAS) --- */
+        .wallet-card {
+            margin-bottom: 30px;
+            display: block;
+        }
+
+        .deposit-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .deposit-form input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: "Chakra Petch", sans-serif;
+            width: 150px;
+        }
+
+        .deposit-form button {
+            background: var(--accent);
+            color: #051220;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: "Chakra Petch", sans-serif;
+            transition: transform 0.2s;
+        }
+
+        .deposit-form button:hover {
+            transform: translateY(-2px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+
+        th {
+            text-align: left;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 8px;
+        }
+
+        td {
+            padding: 12px 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
     </style>
 </head>
 <body>
 
 <main class="container">
-    <h1>Mercado de Apostas</h1>
+    <div class="header-top">
+        <h1>Mercado de Apostas</h1>
+        <a href="?logout=true" class="btn-logout">Sair</a>
+    </div>
 
     <?php if (isset($_GET['success'])): ?>
         <div class="feedback-success">
             Aposta registrada com sucesso e gravada no banco de dados!
         </div>
     <?php endif; ?>
+
+    <?php if (isset($_GET['success_deposito'])): ?>
+        <div class="feedback-success">
+            Depósito efetuado e fundos adicionados à carteira!
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['error'])): ?>
+        <div class="feedback-error">
+            Operação negada: Falha no processamento ou saldo insuficiente.
+        </div>
+    <?php endif; ?>
+
+    <section class="game-card wallet-card">
+        <h2 style="margin-top: 0; font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 1px;">Sua Carteira</h2>
+        <div style="font-size: 28px; color: var(--accent); font-weight: bold; margin-bottom: 20px;">
+            Saldo: R$ <?= number_format((float)$viewData['cliente']['saldo_carteira'], 2, ',', '.') ?>
+        </div>
+
+        <form method="POST" action="/apostar.php" class="deposit-form">
+            <input type="hidden" name="action" value="deposito">
+            <input type="number" name="valor_deposito" step="0.01" min="1" placeholder="Valor (R$)" required>
+            <button type="submit">Depositar</button>
+        </form>
+
+        <details>
+            <summary style="cursor: pointer; color: var(--accent-2); font-weight: 600; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; display: inline-block;">Visualizar Histórico de Apostas</summary>
+            
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Confronto</th>
+                            <th>Palpite</th>
+                            <th>Odd</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if(empty($viewData['historico'])): ?>
+                            <tr>
+                                <td colspan="6" style="padding: 15px; text-align: center; color: var(--muted);">Nenhuma aposta registrada ainda.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($viewData['historico'] as $aposta): ?>
+                            <tr>
+                                <td><?= date('d/m/y H:i', strtotime($aposta['criado_em'])) ?></td>
+                                <td style="font-weight: bold;"><?= htmlspecialchars($aposta['casa'] . ' vs ' . $aposta['fora']) ?></td>
+                                <td style="text-transform: uppercase;"><?= str_replace('_', ' ', htmlspecialchars($aposta['tipo_escolhido'])) ?></td>
+                                <td style="color: var(--accent-2);"><?= $aposta['odd_escolhida'] ?></td>
+                                <td>R$ <?= number_format((float)$aposta['valor'], 2, ',', '.') ?></td>
+                                <td style="font-weight: 600; color: <?= $aposta['status'] === 'vencida' ? 'var(--accent)' : ($aposta['status'] === 'perdida' ? '#ef4444' : 'var(--muted)') ?>;">
+                                    <?= strtoupper($aposta['status']) ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    </section>
 
     <div class="game-grid">
         <?php foreach ($viewData['jogos'] as $jogo): ?>
@@ -189,6 +346,7 @@
                 </div>
                 
                 <form method="POST" action="/apostar.php" onsubmit="return validarAposta(this)">
+                    <input type="hidden" name="action" value="aposta">
                     <input type="hidden" name="jogo_id" value="<?= $jogo['id'] ?>">
                     <input type="hidden" name="tipo_escolhido" class="tipo-input">
                     <input type="hidden" name="odd_escolhida" class="odd-input">
@@ -198,10 +356,12 @@
                             <span class="label">Casa</span>
                             <span class="odd-val"><?= $jogo['odd_casa'] ?></span>
                         </button>
+                        
                         <button type="button" onclick="selectOdd(this, <?= $jogo['odd_empate'] ?>, 'empate')">
                             <span class="label">Empate</span>
                             <span class="odd-val"><?= $jogo['odd_empate'] ?></span>
                         </button>
+                        
                         <button type="button" onclick="selectOdd(this, <?= $jogo['odd_fora'] ?>, 'vitoria_fora')">
                             <span class="label">Fora</span>
                             <span class="odd-val"><?= $jogo['odd_fora'] ?></span>
@@ -221,16 +381,13 @@
 <script>
     function selectOdd(btn, oddValue, tipo) {
         const form = btn.closest('form');
-        
         // Remove active de todos
         form.querySelectorAll('.odds-row button').forEach(b => b.classList.remove('active'));
         // Adiciona active no clicado
         btn.classList.add('active');
-        
         // Injeta os valores pro POST
         form.querySelector('.tipo-input').value = tipo;
         form.querySelector('.odd-input').value = oddValue;
-        
         // Libera o botão de submit apenas após uma odd ser selecionada
         form.querySelector('.btn-bet').classList.add('enabled');
     }
