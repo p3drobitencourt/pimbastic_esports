@@ -1,0 +1,68 @@
+CRITICAL - 2026-05-20 17:43:47 --> ErrorException: chmod(): Operation not permitted
+[Method: GET, Route: /]
+in SYSTEMPATH/Session/Handlers/FileHandler.php on line 144.
+ 1 [internal function]: CodeIgniter\Debug\Exceptions->errorHandler(2, 'chmod(): Operation not permitted', '/var/www/html/system/Session/Handlers/FileHandler.php', 144)
+ 2 SYSTEMPATH/Session/Handlers/FileHandler.php(144): chmod('/var/www/html/writable/session/ci_session9f346a07f5d94859137f10cf2789ccef', 384)
+ 3 [internal function]: CodeIgniter\Session\Handlers\FileHandler->read('9f346a07f5d94859137f10cf2789ccef')
+ 4 SYSTEMPATH/Session/Session.php(625): session_start()
+ 5 SYSTEMPATH/Session/Session.php(120): CodeIgniter\Session\Session->startSession()
+ 6 SYSTEMPATH/Config/Services.php(715): CodeIgniter\Session\Session->start()
+ 7 SYSTEMPATH/Config/BaseService.php(325): CodeIgniter\Config\Services::session(Object(Config\Session), false)
+ 8 SYSTEMPATH/Config/BaseService.php(264): CodeIgniter\Config\BaseService::__callStatic('session', [...])
+ 9 SYSTEMPATH/Config/Services.php(668): CodeIgniter\Config\BaseService::getSharedInstance('session', null)
+10 SYSTEMPATH/Config/BaseService.php(334): CodeIgniter\Config\Services::session()
+11 SYSTEMPATH/Config/BaseService.php(203): CodeIgniter\Config\BaseService::__callStatic('session', [])
+12 SYSTEMPATH/Common.php(1078): CodeIgniter\Config\BaseService::get('session')
+13 SYSTEMPATH/Common.php(1051): service('session')
+14 APPPATH/Views/auth/login.php(76): session()
+15 SYSTEMPATH/View/View.php(240): include('/var/www/html/app/Views/auth/login.php')
+16 SYSTEMPATH/View/View.php(243): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+17 SYSTEMPATH/Common.php(1250): CodeIgniter\View\View->render('auth/login', [], true)
+18 APPPATH/Controllers/AuthController.php(9): view('auth/login', [...])
+19 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\AuthController->login()
+20 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\AuthController))
+21 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+22 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+23 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+24 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2026-05-20 17:43:47 --> ErrorException: Uncaught ErrorException: chmod(): Operation not permitted in /var/www/html/system/Log/Handlers/FileHandler.php:124
+Stack trace:
+#0 [internal function]: CodeIgniter\Debug\Exceptions->errorHandler(2, 'chmod(): Operat...', '/var/www/html/s...', 124)
+#1 /var/www/html/system/Log/Handlers/FileHandler.php(124): chmod('/var/www/html/w...', 420)
+#2 /var/www/html/system/Log/Logger.php(271): CodeIgniter\Log\Handlers\FileHandler->handle('critical', 'ErrorException:...')
+#3 /var/www/html/system/Common.php(817): CodeIgniter\Log\Logger->log('critical', 'ErrorException:...', Array)
+#4 /var/www/html/system/Debug/Exceptions.php(123): log_message('critical', 'ErrorException:...', Array)
+#5 [internal function]: CodeIgniter\Debug\Exceptions->exceptionHandler(Object(ErrorException))
+#6 {main}
+  thrown
+【Previous Exception】
+ErrorException
+chmod(): Operation not permitted
+#0 [internal function]: CodeIgniter\Debug\Exceptions->errorHandler(2, 'chmod(): Operat...', '/var/www/html/s...', 144)
+#1 /var/www/html/system/Session/Handlers/FileHandler.php(144): chmod('/var/www/html/w...', 384)
+#2 [internal function]: CodeIgniter\Session\Handlers\FileHandler->read('9f346a07f5d9485...')
+#3 /var/www/html/system/Session/Session.php(625): session_start()
+#4 /var/www/html/system/Session/Session.php(120): CodeIgniter\Session\Session->startSession()
+#5 /var/www/html/system/Config/Services.php(715): CodeIgniter\Session\Session->start()
+#6 /var/www/html/system/Config/BaseService.php(325): CodeIgniter\Config\Services::session(Object(Config\Session), false)
+#7 /var/www/html/system/Config/BaseService.php(264): CodeIgniter\Config\BaseService::__callStatic('session', Array)
+#8 /var/www/html/system/Config/Services.php(668): CodeIgniter\Config\BaseService::getSharedInstance('session', NULL)
+#9 /var/www/html/system/Config/BaseService.php(334): CodeIgniter\Config\Services::session()
+#10 /var/www/html/system/Config/BaseService.php(203): CodeIgniter\Config\BaseService::__callStatic('session', Array)
+#11 /var/www/html/system/Common.php(1078): CodeIgniter\Config\BaseService::get('session')
+#12 /var/www/html/system/Common.php(1051): service('session')
+#13 /var/www/html/app/Views/auth/login.php(76): session()
+#14 /var/www/html/system/View/View.php(240): include('/var/www/html/a...')
+#15 /var/www/html/system/View/View.php(243): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+#16 /var/www/html/system/Common.php(1250): CodeIgniter\View\View->render('auth/login', Array, true)
+#17 /var/www/html/app/Controllers/AuthController.php(9): view('auth/login', Array)
+#18 /var/www/html/system/CodeIgniter.php(951): App\Controllers\AuthController->login()
+#19 /var/www/html/system/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\AuthController))
+#20 /var/www/html/system/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#21 /var/www/html/system/Boot.php(417): CodeIgniter\CodeIgniter->run()
+#22 /var/www/html/system/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#23 /var/www/html/public/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#24 {main}
+[Method: GET, Route: /]
+in SYSTEMPATH/Log/Handlers/FileHandler.php on line 124.
+ 1 [internal function]: CodeIgniter\Debug\Exceptions->shutdownHandler()
