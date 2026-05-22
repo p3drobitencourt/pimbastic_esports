@@ -14,7 +14,14 @@ class ClienteFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        if (session()->get('usuario_perfil') !== 'cliente') {
+        $perfil = (string) (session()->get('perfil') ?? session()->get('usuario_perfil'));
+        $perfil = strtolower($perfil);
+
+        if (!session()->get('logado') && !session()->get('logged_in')) {
+            return redirect()->to('/login')->with('error', 'Você precisa estar logado para acessar esta página.');
+        }
+
+        if ($perfil !== 'cliente') {
             return redirect()->to('/admin/dashboard')->with('error', 'Acesso restrito a clientes/apostadores.');
         }
     }

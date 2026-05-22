@@ -10,6 +10,9 @@
     <div class="cyber-card p-8">
         <form action="<?= isset($campeonato) && $campeonato ? '/admin/campeonatos/update/' . $campeonato['id'] : '/admin/campeonatos/store' ?>" method="POST" class="space-y-6">
             <?= csrf_field() ?>
+            <?php if (isset($campeonato) && $campeonato): ?>
+                <input type="hidden" name="_method" value="PUT">
+            <?php endif; ?>
             
             <div>
                 <label for="nome" class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Nome do Campeonato</label>

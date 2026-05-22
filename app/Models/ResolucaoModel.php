@@ -24,12 +24,19 @@ class ResolucaoModel extends Model
      */
     public function getJogosPendentes(): array
     {
+        $apostasPendentesSubquery = $this->db->table('aposta')
+            ->select('jogo_id, COUNT(*) AS apostas_abertas', false)
+            ->whereIn('status', ['aberta', 'pendente'])
+            ->groupBy('jogo_id')
+            ->getCompiledSelect();
+
         return $this->db->table('jogo j')
-            ->select('j.*, c.nome AS campeonato, tc.nome AS casa, tf.nome AS fora')
-            ->select('(SELECT COUNT(*) FROM aposta WHERE jogo_id = j.id AND status = "aberta") AS apostas_abertas')
+            ->select('j.*, c.nome AS campeonato, tc.nome AS casa, tf.nome AS fora, COALESCE(ap.apostas_abertas, 0) AS apostas_abertas', false)
             ->join('campeonato c', 'c.id = j.campeonato_id')
             ->join('time tc', 'tc.id = j.time_casa_id')
             ->join('time tf', 'tf.id = j.time_fora_id')
+            ->join("({$apostasPendentesSubquery}) ap", 'ap.jogo_id = j.id', 'inner', false)
+            ->where('j.status !=', 'liquidado')
             ->orderBy('j.data_horario', 'DESC')
             ->get()
             ->getResultArray();
@@ -61,7 +68,7 @@ class ResolucaoModel extends Model
 
         // 1. Lock nas apostas vencedoras
         $apostasVencedoras = $this->db->query(
-            'SELECT id, cliente_id, valor, odd_escolhida FROM aposta WHERE jogo_id = ? AND tipo_escolhido = ? AND status = "aberta" FOR UPDATE',
+            'SELECT id, cliente_id, valor, odd_escolhida FROM aposta WHERE jogo_id = ? AND tipo_escolhido = ? AND status IN ("aberta", "pendente") FOR UPDATE',
             [$jogoId, $resultadoVencedor]
         )->getResultArray();
 
@@ -75,11 +82,19 @@ class ResolucaoModel extends Model
                 ->update();
         }
 
+        // 2b. Registra o resultado final do jogo para auditoria
+        $this->db->table('jogo')
+            ->where('id', $jogoId)
+            ->update([
+                'resultado_final' => $resultadoVencedor,
+                'status' => 'liquidado',
+            ]);
+
         // 3. Marca vencedoras
         $this->db->table('aposta')
             ->where('jogo_id', $jogoId)
             ->where('tipo_escolhido', $resultadoVencedor)
-            ->where('status', 'aberta')
+            ->whereIn('status', ['aberta', 'pendente'])
             ->update(['status' => 'vencida']);
 
         $qtdVencedoras = $this->db->affectedRows();
@@ -88,7 +103,7 @@ class ResolucaoModel extends Model
         $this->db->table('aposta')
             ->where('jogo_id', $jogoId)
             ->where('tipo_escolhido !=', $resultadoVencedor)
-            ->where('status', 'aberta')
+            ->whereIn('status', ['aberta', 'pendente'])
             ->update(['status' => 'perdida']);
 
         $qtdPerdedoras = $this->db->affectedRows();

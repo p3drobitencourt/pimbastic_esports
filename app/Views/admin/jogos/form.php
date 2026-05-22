@@ -10,6 +10,9 @@
     <div class="cyber-card p-8">
         <form action="<?= isset($jogo) && $jogo ? '/admin/jogos/update/' . $jogo['id'] : '/admin/jogos/store' ?>" method="POST" class="space-y-6">
             <?= csrf_field() ?>
+            <?php if (isset($jogo) && $jogo): ?>
+                <input type="hidden" name="_method" value="PUT">
+            <?php endif; ?>
             
             <!-- Campeonato -->
             <div>

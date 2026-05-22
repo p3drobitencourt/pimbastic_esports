@@ -1,3 +1,7 @@
+<?php
+    $perfilSelecionado = old('perfil') ?? ($usuario['perfil'] ?? ($perfil_preferido ?? 'cliente'));
+?>
+
 <?= $this->extend('layouts/master') ?>
 
 <?= $this->section('content') ?>
@@ -10,6 +14,9 @@
     <div class="cyber-card p-8">
         <form action="<?= isset($usuario) && $usuario ? '/admin/usuarios/update/' . $usuario['id'] : '/admin/usuarios/store' ?>" method="POST" class="space-y-6">
             <?= csrf_field() ?>
+            <?php if (isset($usuario) && $usuario): ?>
+                <input type="hidden" name="_method" value="PUT">
+            <?php endif; ?>
             
             <div>
                 <label for="nome" class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Nome Completo</label>
@@ -33,8 +40,8 @@
                 <div>
                     <label for="perfil" class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Perfil de Usuário</label>
                     <select id="perfil" name="perfil" class="w-full bg-black/40 border border-white/10 focus:border-cyan-400 rounded-xl px-3 py-3 text-white focus:outline-none transition-colors appearance-none cursor-pointer">
-                        <option value="cliente" <?= (old('perfil') ?? ($usuario['perfil'] ?? '')) === 'cliente' ? 'selected' : '' ?>>Cliente (Gera Carteira)</option>
-                        <option value="admin" <?= (old('perfil') ?? ($usuario['perfil'] ?? '')) === 'admin' ? 'selected' : '' ?>>Administrador</option>
+                        <option value="cliente" <?= $perfilSelecionado === 'cliente' ? 'selected' : '' ?>>Cliente (Gera Carteira)</option>
+                        <option value="admin" <?= $perfilSelecionado === 'admin' ? 'selected' : '' ?>>Administrador</option>
                     </select>
                 </div>
             </div>

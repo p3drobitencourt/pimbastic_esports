@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use App\Entities\Jogo;
 use CodeIgniter\Model;
 
 class JogoModel extends Model
 {
     protected $table         = 'jogo';
     protected $primaryKey    = 'id';
-    protected $returnType    = Jogo::class;
+    protected $returnType    = 'array';
     protected $useTimestamps = false;
 
     protected $allowedFields = [
@@ -59,5 +58,42 @@ class JogoModel extends Model
         }
 
         return $data;
+    }
+
+    public function getComRelacionamentos(): array
+    {
+        return $this->select('jogo.*, campeonato.nome as camp_nome, tc.nome as casa, tf.nome as fora')
+            ->join('campeonato', 'campeonato.id = jogo.campeonato_id')
+            ->join('time as tc', 'tc.id = jogo.time_casa_id')
+            ->join('time as tf', 'tf.id = jogo.time_fora_id')
+            ->orderBy('jogo.data_horario', 'ASC')
+            ->findAll();
+    }
+
+    public function getJogosAtivos(): array
+    {
+        return $this->select('jogo.*, campeonato.nome as camp_nome, tc.nome as casa, tf.nome as fora')
+            ->join('campeonato', 'campeonato.id = jogo.campeonato_id')
+            ->join('time as tc', 'tc.id = jogo.time_casa_id')
+            ->join('time as tf', 'tf.id = jogo.time_fora_id')
+            ->where('jogo.data_horario >=', date('Y-m-d H:i:s'))
+            ->orderBy('jogo.data_horario', 'ASC')
+            ->findAll();
+    }
+
+    public function getFormData(): array
+    {
+        $campeonatoModel = new CampeonatoModel();
+        $timeModel = new TimeModel();
+
+        return [
+            'campeonatos' => $campeonatoModel->getSelecionaveis(),
+            'times' => $timeModel->getSelecionaveis(),
+        ];
+    }
+
+    public function isDataFutura(string $dataHorario): bool
+    {
+        return strtotime($dataHorario) > time();
     }
 }

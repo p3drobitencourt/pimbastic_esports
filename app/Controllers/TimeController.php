@@ -2,19 +2,19 @@
 
 namespace App\Controllers;
 
+use App\Models\TimeModel;
+
 class TimeController extends BaseController
 {
     public function index()
     {
-        $dados = [
+        $timeModel = new TimeModel();
+
+        return $this->renderView('admin/times/index', [
             'title' => 'Gerenciar Times - Pimbastic',
-            'times' => [
-                ['id' => 1, 'nome' => 'LOUD', 'tecnico' => 'Stk', 'sigla' => 'LLL'],
-                ['id' => 2, 'nome' => 'Furia', 'tecnico' => 'Fallen', 'sigla' => 'FUR'],
-                ['id' => 3, 'nome' => 'paiN Gaming', 'tecnico' => 'Xis', 'sigla' => 'PNG']
-            ]
-        ];
-        return $this->renderView('admin/times/index', $dados);
+            'times' => $timeModel->orderBy('id', 'DESC')->paginate(10),
+            'pager' => $timeModel->pager,
+        ]);
     }
 
     public function create()
@@ -27,7 +27,12 @@ class TimeController extends BaseController
 
     public function edit($id)
     {
-        $time = ['id' => $id, 'nome' => 'LOUD', 'tecnico' => 'Stk', 'sigla' => 'LLL'];
+        $timeModel = new TimeModel();
+        $time = $timeModel->find((int) $id);
+
+        if (!$time) {
+            return redirect()->to('/admin/times')->with('error', 'Time não encontrado.');
+        }
 
         return $this->renderView('admin/times/form', [
             'title' => 'Editar Time #' . $id . ' - Pimbastic',
@@ -47,8 +52,19 @@ class TimeController extends BaseController
             return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
         }
 
-        $nome = $this->request->getPost('nome');
-        return redirect()->to('/admin/times')->with('success', "Time \"$nome\" registrado com sucesso! (Mock)");
+        try {
+            $timeModel = new TimeModel();
+            $timeModel->insert([
+                'nome' => trim((string) $this->request->getPost('nome')),
+                'tecnico' => trim((string) $this->request->getPost('tecnico')),
+                'sigla' => trim((string) $this->request->getPost('sigla')) ?: null,
+            ]);
+
+            return redirect()->to('/admin/times')->with('success', 'Time registrado com sucesso.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao salvar time: {error}', ['error' => $e->getMessage()]);
+            return redirect()->back()->withInput()->with('error', 'Não foi possível salvar o time.');
+        }
     }
 
     public function update($id)
@@ -63,7 +79,36 @@ class TimeController extends BaseController
             return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
         }
 
-        $nome = $this->request->getPost('nome');
-        return redirect()->to('/admin/times')->with('success', "Time \"$nome\" atualizado com sucesso! (Mock)");
+        try {
+            $timeModel = new TimeModel();
+
+            if (!$timeModel->find((int) $id)) {
+                return redirect()->to('/admin/times')->with('error', 'Time não encontrado.');
+            }
+
+            $timeModel->update((int) $id, [
+                'nome' => trim((string) $this->request->getPost('nome')),
+                'tecnico' => trim((string) $this->request->getPost('tecnico')),
+                'sigla' => trim((string) $this->request->getPost('sigla')) ?: null,
+            ]);
+
+            return redirect()->to('/admin/times')->with('success', 'Time atualizado com sucesso.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao atualizar time: {error}', ['error' => $e->getMessage()]);
+            return redirect()->back()->withInput()->with('error', 'Não foi possível atualizar o time.');
+        }
+    }
+
+    public function delete($id)
+    {
+        $timeModel = new TimeModel();
+
+        if (!$timeModel->find((int) $id)) {
+            return redirect()->to('/admin/times')->with('error', 'Time não encontrado.');
+        }
+
+        $timeModel->delete((int) $id);
+
+        return redirect()->to('/admin/times')->with('success', 'Time removido com sucesso.');
     }
 }

@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use App\Entities\Campeonato;
 use CodeIgniter\Model;
 
 class CampeonatoModel extends Model
 {
     protected $table         = 'campeonato';
     protected $primaryKey    = 'id';
-    protected $returnType    = Campeonato::class;
+    protected $returnType    = 'array';
     protected $useTimestamps = false;
     protected $allowedFields = ['nome', 'pais'];
 
@@ -24,4 +23,9 @@ class CampeonatoModel extends Model
             'min_length' => 'O nome deve ter pelo menos 3 caracteres.',
         ],
     ];
+
+    public function getSelecionaveis(int $limite = 100): array
+    {
+        return $this->orderBy('nome', 'ASC')->findAll($limite);
+    }
 }

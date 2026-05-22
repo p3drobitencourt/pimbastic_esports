@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS jogo (
     odd_casa DECIMAL(6,2) NOT NULL,
     odd_empate DECIMAL(6,2) NOT NULL,
     odd_fora DECIMAL(6,2) NOT NULL,
+    status ENUM('agendado', 'liquidado') NOT NULL DEFAULT 'agendado',
+    resultado_final ENUM('vitoria_casa', 'empate', 'vitoria_fora') DEFAULT NULL,
     CONSTRAINT fk_jogo_campeonato FOREIGN KEY (campeonato_id) REFERENCES campeonato(id) ON DELETE RESTRICT,
     CONSTRAINT fk_jogo_time_casa FOREIGN KEY (time_casa_id) REFERENCES time(id) ON DELETE RESTRICT,
     CONSTRAINT fk_jogo_time_fora FOREIGN KEY (time_fora_id) REFERENCES time(id) ON DELETE RESTRICT
@@ -41,7 +43,7 @@ CREATE TABLE IF NOT EXISTS aposta (
     valor DECIMAL(15,2) NOT NULL,
     tipo_escolhido ENUM('vitoria_casa', 'empate', 'vitoria_fora') NOT NULL,
     odd_escolhida DECIMAL(6,2) NOT NULL,
-    status ENUM('aberta', 'vencida', 'perdida') NOT NULL DEFAULT 'aberta',
+    status ENUM('aberta', 'cancelada', 'vencida', 'perdida') NOT NULL DEFAULT 'aberta',
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_aposta_cliente FOREIGN KEY (cliente_id) REFERENCES cliente(id) ON DELETE RESTRICT,
     CONSTRAINT fk_aposta_jogo FOREIGN KEY (jogo_id) REFERENCES jogo(id) ON DELETE RESTRICT

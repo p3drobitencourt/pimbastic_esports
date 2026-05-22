@@ -43,13 +43,46 @@ abstract class BaseController extends Controller
     protected function renderView(string $view, array $data = []): string
     {
         // Injeta dados globais do usuário logado em todas as views
+        $perfil = strtolower((string) ($this->session->get('usuario_perfil') ?? $this->session->get('perfil')));
+
         $data['usuario_logado'] = [
-            'id'     => $this->session->get('usuario_id'),
-            'nome'   => $this->session->get('usuario_nome'),
-            'email'  => $this->session->get('usuario_email'),
-            'perfil' => $this->session->get('usuario_perfil'),
+            'id'     => $this->session->get('usuario_id') ?? $this->session->get('id'),
+            'nome'   => $this->session->get('usuario_nome') ?? $this->session->get('nome'),
+            'email'  => $this->session->get('usuario_email') ?? $this->session->get('email'),
+            'perfil' => $perfil,
         ];
 
         return view($view, $data);
+    }
+
+    /**
+     * Verifica se o usuário logado é admin.
+     */
+    protected function isAdmin(): bool
+    {
+        $perfil = strtolower((string) ($this->session->get('usuario_perfil') ?? $this->session->get('perfil')));
+        return $perfil === 'admin';
+    }
+
+    /**
+     * Verifica se o usuário logado é cliente.
+     */
+    protected function isCliente(): bool
+    {
+        $perfil = strtolower((string) ($this->session->get('usuario_perfil') ?? $this->session->get('perfil')));
+        return $perfil === 'cliente';
+    }
+
+    protected function getClienteSaldo(): float
+    {
+        $clienteId = $this->session->get('cliente_id');
+
+        if (!$clienteId) {
+            return 0.0;
+        }
+
+        $clienteModel = new \App\Models\ClienteModel();
+
+        return $clienteModel->getSaldoAtual((int) $clienteId);
     }
 }

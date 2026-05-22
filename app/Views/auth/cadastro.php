@@ -72,6 +72,10 @@
             </div>
             <p class="text-gray-400 text-sm mb-6 uppercase tracking-wider">Crie sua Conta</p>
 
+            <div class="mb-5 bg-cyan-950/40 border border-cyan-800/30 text-cyan-200 p-3 rounded-xl text-left text-xs">
+                O cadastro público cria apenas contas de <strong>cliente</strong>. Para criar admin, use o painel administrativo.
+            </div>
+
             <!-- Error Alerts -->
             <?php if (session()->getFlashdata('error')): ?>
                 <div class="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl text-left text-sm mb-6">
@@ -106,12 +110,9 @@
                         <label for="senha" class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Senha</label>
                         <input type="password" id="senha" name="senha" required placeholder="Mínimo 6 caracteres" class="w-full bg-black/40 border border-white/10 focus:border-cyan-400 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none transition-colors">
                     </div>
-                    <div>
-                        <label for="perfil" class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Perfil de Acesso</label>
-                        <select id="perfil" name="perfil" class="w-full bg-black/40 border border-white/10 focus:border-cyan-400 rounded-xl px-3 py-2.5 text-white focus:outline-none transition-colors appearance-none cursor-pointer">
-                            <option value="cliente" <?= old('perfil') === 'cliente' ? 'selected' : '' ?>>Apostador (Cliente)</option>
-                            <option value="admin" <?= old('perfil') === 'admin' ? 'selected' : '' ?>>Administrador</option>
-                        </select>
+                    <input type="hidden" name="perfil" value="cliente">
+                    <div class="bg-cyan-950/40 border border-cyan-800/40 p-3 rounded-xl text-xs text-cyan-200">
+                        Cadastros públicos são criados como <strong>cliente</strong>.
                     </div>
                 </div>
 

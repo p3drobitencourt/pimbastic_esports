@@ -2,19 +2,19 @@
 
 namespace App\Controllers;
 
+use App\Models\CampeonatoModel;
+
 class CampeonatoController extends BaseController
 {
     public function index()
     {
-        $dados = [
+        $campeonatoModel = new CampeonatoModel();
+
+        return $this->renderView('admin/campeonatos/index', [
             'title' => 'Gerenciar Campeonatos - Pimbastic',
-            'campeonatos' => [
-                ['id' => 1, 'nome' => 'CBLOL Split 2', 'pais' => 'Brasil'],
-                ['id' => 2, 'nome' => 'VCT Américas', 'pais' => 'EUA'],
-                ['id' => 3, 'nome' => 'CS2 Major Copenhagen', 'pais' => 'Dinamarca']
-            ]
-        ];
-        return $this->renderView('admin/campeonatos/index', $dados);
+            'campeonatos' => $campeonatoModel->orderBy('id', 'DESC')->paginate(10),
+            'pager' => $campeonatoModel->pager,
+        ]);
     }
 
     public function create()
@@ -27,8 +27,12 @@ class CampeonatoController extends BaseController
 
     public function edit($id)
     {
-        // Mock: simula busca do campeonato pelo ID
-        $campeonato = ['id' => $id, 'nome' => 'CBLOL Split 2', 'pais' => 'Brasil'];
+        $campeonatoModel = new CampeonatoModel();
+        $campeonato = $campeonatoModel->find((int) $id);
+
+        if (!$campeonato) {
+            return redirect()->to('/admin/campeonatos')->with('error', 'Campeonato não encontrado.');
+        }
 
         return $this->renderView('admin/campeonatos/form', [
             'title' => 'Editar Campeonato #' . $id . ' - Pimbastic',
@@ -47,8 +51,18 @@ class CampeonatoController extends BaseController
             return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
         }
 
-        $nome = $this->request->getPost('nome');
-        return redirect()->to('/admin/campeonatos')->with('success', "Campeonato \"$nome\" registrado com sucesso! (Mock)");
+        try {
+            $campeonatoModel = new CampeonatoModel();
+            $campeonatoModel->insert([
+                'nome' => trim((string) $this->request->getPost('nome')),
+                'pais' => trim((string) $this->request->getPost('pais')) ?: null,
+            ]);
+
+            return redirect()->to('/admin/campeonatos')->with('success', 'Campeonato registrado com sucesso.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao salvar campeonato: {error}', ['error' => $e->getMessage()]);
+            return redirect()->back()->withInput()->with('error', 'Não foi possível salvar o campeonato.');
+        }
     }
 
     public function update($id)
@@ -62,7 +76,35 @@ class CampeonatoController extends BaseController
             return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
         }
 
-        $nome = $this->request->getPost('nome');
-        return redirect()->to('/admin/campeonatos')->with('success', "Campeonato \"$nome\" atualizado com sucesso! (Mock)");
+        try {
+            $campeonatoModel = new CampeonatoModel();
+
+            if (!$campeonatoModel->find((int) $id)) {
+                return redirect()->to('/admin/campeonatos')->with('error', 'Campeonato não encontrado.');
+            }
+
+            $campeonatoModel->update((int) $id, [
+                'nome' => trim((string) $this->request->getPost('nome')),
+                'pais' => trim((string) $this->request->getPost('pais')) ?: null,
+            ]);
+
+            return redirect()->to('/admin/campeonatos')->with('success', 'Campeonato atualizado com sucesso.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao atualizar campeonato: {error}', ['error' => $e->getMessage()]);
+            return redirect()->back()->withInput()->with('error', 'Não foi possível atualizar o campeonato.');
+        }
+    }
+
+    public function delete($id)
+    {
+        $campeonatoModel = new CampeonatoModel();
+
+        if (!$campeonatoModel->find((int) $id)) {
+            return redirect()->to('/admin/campeonatos')->with('error', 'Campeonato não encontrado.');
+        }
+
+        $campeonatoModel->delete((int) $id);
+
+        return redirect()->to('/admin/campeonatos')->with('success', 'Campeonato removido com sucesso.');
     }
 }

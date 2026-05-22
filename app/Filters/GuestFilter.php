@@ -14,14 +14,15 @@ class GuestFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        if (session()->get('logged_in')) {
-            $perfil = session()->get('usuario_perfil');
+        if (session()->get('logado') || session()->get('logged_in')) {
+            $perfil = (string) (session()->get('perfil') ?? session()->get('usuario_perfil'));
+            $perfil = strtolower($perfil);
 
             if ($perfil === 'admin') {
                 return redirect()->to('/admin/dashboard');
             }
 
-            return redirect()->to('/cliente/sportsbook');
+            return redirect()->to('/cliente/dashboard');
         }
     }
 

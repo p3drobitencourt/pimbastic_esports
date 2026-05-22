@@ -14,8 +14,15 @@ class AdminFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        if (session()->get('usuario_perfil') !== 'admin') {
-            return redirect()->to('/cliente/sportsbook')->with('error', 'Acesso restrito a administradores.');
+        $perfil = (string) (session()->get('perfil') ?? session()->get('usuario_perfil'));
+        $perfil = strtolower($perfil);
+
+        if (!session()->get('logado') && !session()->get('logged_in')) {
+            return redirect()->to('/login')->with('error', 'Você precisa estar logado para acessar esta página.');
+        }
+
+        if ($perfil !== 'admin') {
+            return redirect()->to('/cliente/dashboard')->with('error', 'Acesso restrito a administradores.');
         }
     }
 

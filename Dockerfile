@@ -2,7 +2,7 @@ FROM php:8.2-apache
 
 # Install PHP extensions required by CodeIgniter 4
 RUN apt-get update && apt-get install -y libicu-dev \
-    && docker-php-ext-install pdo pdo_mysql bcmath intl \
+    && docker-php-ext-install pdo pdo_mysql mysqli bcmath intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Enable Apache mod_rewrite (essential for CI4 routing)

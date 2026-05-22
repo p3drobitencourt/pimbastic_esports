@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use App\Entities\Time;
 use CodeIgniter\Model;
 
 class TimeModel extends Model
 {
     protected $table         = 'time';
     protected $primaryKey    = 'id';
-    protected $returnType    = Time::class;
+    protected $returnType    = 'array';
     protected $useTimestamps = false;
     protected $allowedFields = ['nome', 'tecnico', 'sigla'];
 
@@ -28,4 +27,9 @@ class TimeModel extends Model
             'required' => 'O nome do técnico é obrigatório.',
         ],
     ];
+
+    public function getSelecionaveis(int $limite = 200): array
+    {
+        return $this->orderBy('nome', 'ASC')->findAll($limite);
+    }
 }

@@ -26,11 +26,11 @@ class Database extends Config
      */
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'localhost',
+        'hostname'     => '',
         'username'     => '',
         'password'     => '',
         'database'     => '',
-        'DBDriver'     => 'MySQLi',
+        'DBDriver'     => '',
         'DBPrefix'     => '',
         'pConnect'     => false,
         'DBDebug'      => true,
@@ -193,6 +193,13 @@ class Database extends Config
     public function __construct()
     {
         parent::__construct();
+
+        $this->default['hostname'] = env('DB_HOST', '127.0.0.1');
+        $this->default['username'] = env('DB_USER', 'root');
+        $this->default['password'] = env('DB_PASS', 'root');
+        $this->default['database'] = env('DB_NAME', 'pimbastic_esports');
+        $this->default['DBDriver'] = env('DB_DRIVER', 'MySQLi');
+        $this->default['port'] = (int) env('DB_PORT', 3306);
 
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that

@@ -48,6 +48,17 @@ Sistema Web para cadastro de campeonatos, times, jogos, clientes e apostas em eS
    http://localhost:8080
    ```
 
+3. **Criar o primeiro admin para testes:**
+   O cadastro público cria apenas clientes. Para criar um admin inicial, rode o seeder abaixo:
+   ```bash
+   php spark db:seed AdminSeeder
+   ```
+   Opcionalmente, defina estas variáveis no ambiente antes de executar o comando:
+   - `ADMIN_EMAIL`
+   - `ADMIN_PASSWORD`
+
+   Se você não definir nada, o seeder usa `admin@pimbastic.local` e `admin123`.
+
 ---
 
 ## 🎮 Roteiro de Teste (Como Avaliar)
@@ -56,7 +67,7 @@ O sistema conta com um redirecionamento inteligente na tela de login para facili
 
 1. **Acesso do Administrador (Dashboard & Cadastros):**
    - Acesse `http://localhost:8080` (será redirecionado para a tela de login).
-   - Digite qualquer e-mail que contenha a palavra **`admin`** (ex: `admin@pimbastic.com`) e qualquer senha.
+   - Digite qualquer e-mail que contenha a palavra **`admin`** (ex: `admin@pimbastic.local`) e qualquer senha.
    - Clique em **Entrar no Sistema**.
    - Você será levado ao **Painel Administrativo** exibindo métricas do sistema e status online.
    - Navegue pelo menu lateral para acessar as listagens de **Campeonatos**, **Times** e **Usuários**.
@@ -68,6 +79,7 @@ O sistema conta com um redirecionamento inteligente na tela de login para facili
    - Clique em **Entrar no Sistema**.
    - Você será levado ao **Mercado de Apostas (Sportsbook)** do cliente.
    - O sportsbook exibe o saldo do usuário (R$ 1.500,50) e cards interativos com jogos de eSports.
+      - **Adicionar saldo (teste):** O cliente pode creditar saldo manualmente pelo dashboard em "Adicionar Saldo" para testar apostas — esse fluxo é simulado e não processa pagamentos reais.
    - **Interatividade das Odds**: Clique em um dos botões de odd ("Casa", "Empate" ou "Fora") de um jogo. O botão correspondente ficará marcado com brilho ciano, e um painel de cálculo aparecerá mostrando o retorno estimado da aposta em tempo real ao digitar um valor.
    - Insira um valor no input e clique em **Apostar** para registrar a aposta (mensagem de sucesso de mock é exibida).
    - Abaixo dos jogos, visualize a tabela com o histórico de apostas realizadas.
