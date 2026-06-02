@@ -58,3 +58,9 @@ CREATE TABLE IF NOT EXISTS usuario (
     cliente_id INT UNIQUE, 
     CONSTRAINT fk_usuario_cliente FOREIGN KEY (cliente_id) REFERENCES cliente(id) ON DELETE CASCADE
 );
+
+INSERT INTO campeonato (nome, pais) VALUES ('CBLOL 2026', 'Brasil');
+INSERT INTO time (nome, tecnico, sigla) VALUES ('LOUD', 'Frost', 'LLL'), ('PaiN Gaming', 'Xero', 'PNG');
+INSERT INTO jogo (campeonato_id, time_casa_id, time_fora_id, data_horario, odd_casa, odd_empate, odd_fora) VALUES (1, 1, 2, '2026-07-20 13:00:00', 1.85, 3.00, 2.10);
+INSERT INTO cliente (nome, saldo_carteira) VALUES ('Admin Pimbastic', 5000.00);
+INSERT INTO usuario (nome, email, senha, perfil, cliente_id) VALUES ('Admin', 'admin@pimbastic.com', 'admin123', 'admin', 1);
