@@ -90,3 +90,10 @@ O arquivo `README.md` foi reestruturado para eliminar redundâncias e garantir a
 4. **Padronização de Comandos:** O fluxo de build limpo (`docker compose down -v` seguido de `up --build -d`) foi estabelecido como comando oficial para evitar colisões com instâncias anteriores do container MySQL.
 
 Anexe as imagens (capturas de tela do `docker compose ps`, do Front-End operando e de um `SELECT` demonstrando os dados no SGBD) e referencie-as na seção `7. Evidências Técnicas de Execução` do documento. Não esqueça de inserir também o `diagrama.png` na raiz do projeto.
+
+![Texto Alternativo](visualizacaobd.jpeg)
+![Texto Alternativo](login.jpeg)
+![Texto Alternativo](evidencias.jpeg)
+![Texto Alternativo](diagrama.png)
+
+
