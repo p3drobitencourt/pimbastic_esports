@@ -2,81 +2,42 @@
 
 namespace App\Controllers;
 
+use App\Models\CampeonatoModel;
+use App\Models\JogoModel;
+use App\Models\TimeModel;
+
 class JogoController extends BaseController
 {
-    /**
-     * Lista todos os jogos cadastrados (mock).
-     */
     public function index()
     {
-        $dados = [
-            'title' => 'Gerenciar Jogos - Pimbastic',
-            'jogos' => [
-                [
-                    'id' => 1,
-                    'campeonato' => 'CBLOL Split 2',
-                    'casa' => 'LOUD',
-                    'fora' => 'paiN Gaming',
-                    'data_horario' => '2026-05-22 13:00:00',
-                    'odd_casa' => 1.50,
-                    'odd_empate' => 2.50,
-                    'odd_fora' => 2.80
-                ],
-                [
-                    'id' => 2,
-                    'campeonato' => 'CS2 Major Copenhagen',
-                    'casa' => 'Furia',
-                    'fora' => 'Natus Vincere',
-                    'data_horario' => '2026-05-23 15:00:00',
-                    'odd_casa' => 2.10,
-                    'odd_empate' => 3.10,
-                    'odd_fora' => 1.90
-                ],
-                [
-                    'id' => 3,
-                    'campeonato' => 'VCT Americas Split 1',
-                    'casa' => 'Sentinels',
-                    'fora' => 'Leviatán',
-                    'data_horario' => '2026-05-23 18:00:00',
-                    'odd_casa' => 1.75,
-                    'odd_empate' => 4.20,
-                    'odd_fora' => 2.10
-                ]
-            ]
-        ];
+        $jogoModel = new JogoModel();
 
-        return $this->renderView('admin/jogos/index', $dados);
+        return $this->renderView('admin/jogos/index', [
+            'title' => 'Gerenciar Jogos - Pimbastic',
+            'jogos' => $jogoModel
+                ->select('jogo.*, campeonato.nome as campeonato, tc.nome as casa, tf.nome as fora')
+                ->join('campeonato', 'campeonato.id = jogo.campeonato_id')
+                ->join('time as tc', 'tc.id = jogo.time_casa_id')
+                ->join('time as tf', 'tf.id = jogo.time_fora_id')
+                ->orderBy('jogo.id', 'DESC')
+                ->paginate(10),
+            'pager' => $jogoModel->pager,
+        ]);
     }
 
-    /**
-     * Exibe formulário de criação de novo jogo.
-     */
     public function create()
     {
-        $dados = [
-            'title' => 'Novo Jogo - Pimbastic',
-            'campeonatos' => [
-                ['id' => 1, 'nome' => 'CBLOL Split 2'],
-                ['id' => 2, 'nome' => 'CS2 Major Copenhagen'],
-                ['id' => 3, 'nome' => 'VCT Americas Split 1']
-            ],
-            'times' => [
-                ['id' => 1, 'nome' => 'LOUD'],
-                ['id' => 2, 'nome' => 'Furia'],
-                ['id' => 3, 'nome' => 'paiN Gaming'],
-                ['id' => 4, 'nome' => 'Natus Vincere'],
-                ['id' => 5, 'nome' => 'Sentinels'],
-                ['id' => 6, 'nome' => 'Leviatán']
-            ],
-            'jogo' => null
-        ];
+        $jogoModel = new JogoModel();
+        $formData = $jogoModel->getFormData();
 
-        return $this->renderView('admin/jogos/form', $dados);
+        return $this->renderView('admin/jogos/form', [
+            'title' => 'Novo Jogo - Pimbastic',
+            'campeonatos' => $formData['campeonatos'],
+            'times' => $formData['times'],
+            'jogo' => null,
+        ]);
     }
 
-    /**
-     * Valida e processa a criação de jogo (mock).
-     */
     public function store()
     {
         $regras = [
@@ -93,47 +54,58 @@ class JogoController extends BaseController
             return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
         }
 
-        return redirect()->to('/admin/jogos')->with('success', 'Jogo registrado com sucesso! (Mock)');
+        $dataHorario = str_replace('T', ' ', (string) $this->request->getPost('data_horario'));
+        if (strlen($dataHorario) === 16) {
+            $dataHorario .= ':00';
+        }
+
+        if (strtotime($dataHorario) <= time()) {
+            return redirect()->back()->withInput()->with('error', 'A data do jogo precisa ser futura.');
+        }
+
+        try {
+            $jogoModel = new JogoModel();
+            $jogoModel->save([
+                'campeonato_id' => (int) $this->request->getPost('campeonato_id'),
+                'time_casa_id' => (int) $this->request->getPost('time_casa_id'),
+                'time_fora_id' => (int) $this->request->getPost('time_fora_id'),
+                'data_horario' => $dataHorario,
+                'odd_casa' => (float) $this->request->getPost('odd_casa'),
+                'odd_empate' => (float) $this->request->getPost('odd_empate'),
+                'odd_fora' => (float) $this->request->getPost('odd_fora'),
+            ]);
+
+            if ($jogoModel->errors()) {
+                return redirect()->back()->withInput()->with('error', $jogoModel->errors());
+            }
+
+            return redirect()->to('/admin/jogos')->with('success', 'Jogo registrado com sucesso.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao salvar jogo: {error}', ['error' => $e->getMessage()]);
+            return redirect()->back()->withInput()->with('error', 'Não foi possível salvar o jogo.');
+        }
     }
 
-    /**
-     * Exibe formulário de edição de jogo existente (mock).
-     */
     public function edit($id)
     {
-        $dados = [
-            'title' => 'Editar Jogo #' . $id . ' - Pimbastic',
-            'campeonatos' => [
-                ['id' => 1, 'nome' => 'CBLOL Split 2'],
-                ['id' => 2, 'nome' => 'CS2 Major Copenhagen'],
-                ['id' => 3, 'nome' => 'VCT Americas Split 1']
-            ],
-            'times' => [
-                ['id' => 1, 'nome' => 'LOUD'],
-                ['id' => 2, 'nome' => 'Furia'],
-                ['id' => 3, 'nome' => 'paiN Gaming'],
-                ['id' => 4, 'nome' => 'Natus Vincere'],
-                ['id' => 5, 'nome' => 'Sentinels'],
-                ['id' => 6, 'nome' => 'Leviatán']
-            ],
-            'jogo' => [
-                'id' => $id,
-                'campeonato_id' => 1,
-                'time_casa_id' => 1,
-                'time_fora_id' => 3,
-                'data_horario' => '2026-05-22T13:00',
-                'odd_casa' => 1.50,
-                'odd_empate' => 2.50,
-                'odd_fora' => 2.80
-            ]
-        ];
+        $jogoModel = new JogoModel();
+        $jogo = $jogoModel->find((int) $id);
 
-        return $this->renderView('admin/jogos/form', $dados);
+        if (!$jogo) {
+            return redirect()->to('/admin/jogos')->with('error', 'Jogo não encontrado.');
+        }
+
+        $formData = $jogoModel->getFormData();
+        $jogo['data_horario'] = date('Y-m-d\TH:i', strtotime($jogo['data_horario']));
+
+        return $this->renderView('admin/jogos/form', [
+            'title' => 'Editar Jogo #' . $id . ' - Pimbastic',
+            'campeonatos' => $formData['campeonatos'],
+            'times' => $formData['times'],
+            'jogo' => $jogo,
+        ]);
     }
 
-    /**
-     * Valida e processa a atualização do jogo (mock).
-     */
     public function update($id)
     {
         $regras = [
@@ -150,6 +122,49 @@ class JogoController extends BaseController
             return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
         }
 
-        return redirect()->to('/admin/jogos')->with('success', "Jogo #$id atualizado com sucesso! (Mock)");
+        $dataHorario = str_replace('T', ' ', (string) $this->request->getPost('data_horario'));
+        if (strlen($dataHorario) === 16) {
+            $dataHorario .= ':00';
+        }
+
+        if (strtotime($dataHorario) <= time()) {
+            return redirect()->back()->withInput()->with('error', 'A data do jogo precisa ser futura.');
+        }
+
+        try {
+            $jogoModel = new JogoModel();
+
+            if (!$jogoModel->find((int) $id)) {
+                return redirect()->to('/admin/jogos')->with('error', 'Jogo não encontrado.');
+            }
+
+            $jogoModel->update((int) $id, [
+                'campeonato_id' => (int) $this->request->getPost('campeonato_id'),
+                'time_casa_id' => (int) $this->request->getPost('time_casa_id'),
+                'time_fora_id' => (int) $this->request->getPost('time_fora_id'),
+                'data_horario' => $dataHorario,
+                'odd_casa' => (float) $this->request->getPost('odd_casa'),
+                'odd_empate' => (float) $this->request->getPost('odd_empate'),
+                'odd_fora' => (float) $this->request->getPost('odd_fora'),
+            ]);
+
+            return redirect()->to('/admin/jogos')->with('success', 'Jogo atualizado com sucesso.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao atualizar jogo: {error}', ['error' => $e->getMessage()]);
+            return redirect()->back()->withInput()->with('error', 'Não foi possível atualizar o jogo.');
+        }
+    }
+
+    public function delete($id)
+    {
+        $jogoModel = new JogoModel();
+
+        if (!$jogoModel->find((int) $id)) {
+            return redirect()->to('/admin/jogos')->with('error', 'Jogo não encontrado.');
+        }
+
+        $jogoModel->delete((int) $id);
+
+        return redirect()->to('/admin/jogos')->with('success', 'Jogo removido com sucesso.');
     }
 }

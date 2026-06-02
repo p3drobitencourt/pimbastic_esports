@@ -2,74 +2,42 @@
 
 namespace App\Controllers;
 
+use App\Services\ApostaService;
+
 class ClienteController extends BaseController
 {
+    public function __construct(private readonly ApostaService $apostaService = new ApostaService())
+    {
+    }
+
+    public function dashboard()
+    {
+        $clienteId = (int) ($this->session->get('cliente_id') ?? 0);
+
+        if ($clienteId <= 0) {
+            return redirect()->to('/login')->with('error', 'Cliente não autenticado.');
+        }
+
+        $dados = $this->apostaService->dashboard($clienteId);
+        $dados['title'] = 'Dashboard do Cliente - Pimbastic';
+        $dados['saldo_realtime'] = $this->getClienteSaldo();
+
+        return $this->renderView('cliente/dashboard', $dados);
+    }
+
     public function sportsbook()
     {
-        $dados = [
-            'title' => 'Mercado de Apostas - Pimbastic',
-            'cliente' => [
-                'saldo_carteira' => 1500.50
-            ],
-            'jogos' => [
-                [
-                    'id' => 1,
-                    'campeonato' => 'CBLOL Split 2',
-                    'casa' => 'LOUD',
-                    'fora' => 'paiN Gaming',
-                    'data_horario' => 'Hoje - 13:00',
-                    'odd_casa' => 1.50,
-                    'odd_empate' => 2.50,
-                    'odd_fora' => 2.80
-                ],
-                [
-                    'id' => 2,
-                    'campeonato' => 'CS2 Major Copenhagen',
-                    'casa' => 'Furia',
-                    'fora' => 'Natus Vincere',
-                    'data_horario' => 'Amanhã - 15:00',
-                    'odd_casa' => 2.10,
-                    'odd_empate' => 3.10,
-                    'odd_fora' => 1.90
-                ],
-                [
-                    'id' => 3,
-                    'campeonato' => 'VCT Americas Split 1',
-                    'casa' => 'Sentinels',
-                    'fora' => 'Leviatán',
-                    'data_horario' => '23/05 - 18:00',
-                    'odd_casa' => 1.75,
-                    'odd_empate' => 4.20,
-                    'odd_fora' => 2.10
-                ]
-            ],
-            'historico' => [
-                [
-                    'criado_em' => '2026-05-18 10:00:00',
-                    'casa' => 'LOUD',
-                    'fora' => 'RED Canids',
-                    'tipo_escolhido' => 'vitoria_casa',
-                    'odd_escolhida' => 1.85,
-                    'valor' => 50.00,
-                    'status' => 'vencida'
-                ],
-                [
-                    'criado_em' => '2026-05-19 14:30:00',
-                    'casa' => 'Furia',
-                    'fora' => 'Imperial',
-                    'tipo_escolhido' => 'vitoria_fora',
-                    'odd_escolhida' => 2.20,
-                    'valor' => 100.00,
-                    'status' => 'pendente'
-                ]
-            ]
-        ];
-
-        return $this->renderView('cliente/sportsbook', $dados);
+        return $this->dashboard();
     }
 
     public function apostar()
     {
+        $clienteId = (int) ($this->session->get('cliente_id') ?? 0);
+
+        if ($clienteId <= 0) {
+            return redirect()->to('/login')->with('error', 'Cliente não autenticado.');
+        }
+
         $regras = [
             'jogo_id' => 'required|integer',
             'valor'   => 'required|numeric|greater_than[0]',
@@ -80,9 +48,104 @@ class ClienteController extends BaseController
             return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
         }
 
-        $tipoAposta = $this->request->getPost('tipo');
-        $valor = $this->request->getPost('valor');
+        $resultado = $this->apostaService->registrar($clienteId, [
+            'jogo_id' => $this->request->getPost('jogo_id'),
+            'valor' => $this->request->getPost('valor'),
+            'tipo' => $this->request->getPost('tipo'),
+        ]);
 
-        return redirect()->to('/cliente/sportsbook')->with('success', "Aposta de R$ " . number_format($valor, 2, ',', '.') . " no resultado ($tipoAposta) registrada com sucesso! (Mock)");
+        if (!$resultado['success']) {
+            return redirect()->back()->withInput()->with('error', $resultado['message']);
+        }
+
+        return redirect()->to('/cliente/dashboard')->with('success', $resultado['message']);
+    }
+
+    public function atualizarAposta(int $id)
+    {
+        $clienteId = (int) ($this->session->get('cliente_id') ?? 0);
+
+        $regras = [
+            'jogo_id' => 'required|integer',
+            'valor' => 'required|numeric|greater_than[0]',
+            'tipo' => 'required|in_list[casa,empate,fora]',
+        ];
+
+        if (!$this->validate($regras)) {
+            return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
+        }
+
+        $resultado = $this->apostaService->atualizar($id, $clienteId, [
+            'jogo_id' => $this->request->getPost('jogo_id'),
+            'valor' => $this->request->getPost('valor'),
+            'tipo' => $this->request->getPost('tipo'),
+        ]);
+
+        if (!$resultado['success']) {
+            return redirect()->back()->withInput()->with('error', $resultado['message']);
+        }
+
+        return redirect()->to('/cliente/dashboard')->with('success', $resultado['message']);
+    }
+
+    public function cancelarAposta(int $id)
+    {
+        $clienteId = (int) ($this->session->get('cliente_id') ?? 0);
+        $resultado = $this->apostaService->cancelar($id, $clienteId);
+
+        if (!$resultado['success']) {
+            return redirect()->back()->with('error', $resultado['message']);
+        }
+
+        return redirect()->to('/cliente/dashboard')->with('success', $resultado['message']);
+    }
+
+    public function carteira()
+    {
+        return $this->dashboard();
+    }
+
+    public function showAdicionarSaldo()
+    {
+        $clienteId = (int) ($this->session->get('cliente_id') ?? 0);
+
+        if ($clienteId <= 0) {
+            return redirect()->to('/login')->with('error', 'Cliente não autenticado.');
+        }
+
+        $dados = [
+            'title' => 'Adicionar Saldo - Pimbastic',
+            'saldo_realtime' => $this->getClienteSaldo(),
+        ];
+
+        return $this->renderView('cliente/adicionar_saldo', $dados);
+    }
+
+    public function adicionarSaldo()
+    {
+        $clienteId = (int) ($this->session->get('cliente_id') ?? 0);
+
+        if ($clienteId <= 0) {
+            return redirect()->to('/login')->with('error', 'Cliente não autenticado.');
+        }
+
+        $regras = [
+            'valor' => 'required|numeric|greater_than[0]'
+        ];
+
+        if (!$this->validate($regras)) {
+            return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
+        }
+
+        $valor = (float) $this->request->getPost('valor');
+
+        $clienteModel = new \App\Models\ClienteModel();
+        $resultado = $clienteModel->creditarSaldo($clienteId, $valor);
+
+        if (!$resultado['success']) {
+            return redirect()->back()->with('error', $resultado['message']);
+        }
+
+        return redirect()->to('/cliente/dashboard')->with('success', $resultado['message']);
     }
 }

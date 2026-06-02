@@ -72,6 +72,10 @@
             </div>
             <p class="text-gray-400 text-sm mb-6 uppercase tracking-wider">Acesse sua Conta</p>
 
+            <div class="mb-5 bg-cyan-950/40 border border-cyan-800/30 text-cyan-200 p-3 rounded-xl text-left text-xs">
+                Cadastro público cria apenas <strong>cliente</strong>. Contas <strong>admin</strong> devem ser criadas no painel administrativo.
+            </div>
+
             <!-- Success Alerts -->
             <?php if (session()->getFlashdata('success')): ?>
                 <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 p-3 rounded-lg text-sm mb-6 text-left">
@@ -85,17 +89,6 @@
                     <?= esc(session()->getFlashdata('error')) ?>
                 </div>
             <?php endif; ?>
-
-            <!-- Credentials guide for testing -->
-            <div class="bg-cyan-950/40 border border-cyan-800/40 p-4 rounded-xl text-left text-xs mb-6 space-y-2">
-                <span class="font-bold text-cyan-400 block uppercase tracking-wider">Dica para Avaliação:</span>
-                <p class="text-gray-300">
-                    • Para o painel de <strong>Administrador</strong>: use um e-mail com <code class="bg-cyan-900/60 text-white px-1 py-0.5 rounded font-mono">admin</code> (ex: <span class="text-cyan-300">admin@pimbastic.com</span>).
-                </p>
-                <p class="text-gray-300">
-                    • Para o <strong>Sportsbook do Cliente</strong>: use qualquer outro e-mail (ex: <span class="text-cyan-300">cliente@pimbastic.com</span>).
-                </p>
-            </div>
 
             <form method="POST" action="/login/autenticar" class="space-y-5 text-left">
                 <?= csrf_field() ?>
