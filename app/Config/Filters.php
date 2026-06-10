@@ -71,7 +71,7 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            'csrf',
+            'cors',
             'invalidchars',
         ],
         'after' => [
@@ -97,9 +97,9 @@ class Filters extends BaseFilters
      * @var array<string, array<string, list<string>>>
      */
     public array $filters = [
-        'guest'   => ['before' => ['login', 'login/*', 'cadastro', 'cadastro/*']],
-        'auth'    => ['before' => ['admin/*', 'cliente/*']],
+        'guest'   => ['before' => ['auth/login', 'auth/register']],
+        'auth'    => ['before' => ['admin/*', 'cliente/*', 'apostas/*']],
         'admin'   => ['before' => ['admin/*']],
-        'cliente' => ['before' => ['cliente/*']],
+        'cliente' => ['before' => ['cliente/*', 'apostas/*']],
     ];
 }

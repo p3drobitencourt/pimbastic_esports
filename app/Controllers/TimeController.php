@@ -3,41 +3,39 @@
 namespace App\Controllers;
 
 use App\Models\TimeModel;
+use CodeIgniter\RESTful\ResourceController;
 
-class TimeController extends BaseController
+class TimeController extends ResourceController
 {
+    protected $format = 'json';
+
     public function index()
     {
-        $timeModel = new TimeModel();
-
-        return $this->renderView('admin/times/index', [
-            'title' => 'Gerenciar Times - Pimbastic',
-            'times' => $timeModel->orderBy('id', 'DESC')->paginate(10),
-            'pager' => $timeModel->pager,
-        ]);
-    }
-
-    public function create()
-    {
-        return $this->renderView('admin/times/form', [
-            'title' => 'Novo Time - Pimbastic',
-            'time' => null
-        ]);
-    }
-
-    public function edit($id)
-    {
-        $timeModel = new TimeModel();
-        $time = $timeModel->find((int) $id);
-
-        if (!$time) {
-            return redirect()->to('/admin/times')->with('error', 'Time não encontrado.');
+        try {
+            $timeModel = new TimeModel();
+            $times = $timeModel->orderBy('id', 'DESC')->findAll();
+            return $this->respond(['data' => $times]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao listar times: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível carregar os times.');
         }
+    }
 
-        return $this->renderView('admin/times/form', [
-            'title' => 'Editar Time #' . $id . ' - Pimbastic',
-            'time' => $time
-        ]);
+    public function show($id = null)
+    {
+        try {
+            $timeModel = new TimeModel();
+            $time = $timeModel->find((int) $id);
+
+            if (!$time) {
+                return $this->failNotFound('Time não encontrado.');
+            }
+
+            return $this->respond(['data' => $time]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao buscar time: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível carregar o time.');
+        }
     }
 
     public function store()
@@ -49,25 +47,30 @@ class TimeController extends BaseController
         ];
 
         if (!$this->validate($regras)) {
-            return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
         try {
-            $timeModel = new TimeModel();
-            $timeModel->insert([
-                'nome' => trim((string) $this->request->getPost('nome')),
-                'tecnico' => trim((string) $this->request->getPost('tecnico')),
-                'sigla' => trim((string) $this->request->getPost('sigla')) ?: null,
-            ]);
+            $dados = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            return redirect()->to('/admin/times')->with('success', 'Time registrado com sucesso.');
+            $timeModel = new TimeModel();
+            $novoTime = [
+                'nome' => trim((string) ($dados['nome'] ?? '')),
+                'tecnico' => trim((string) ($dados['tecnico'] ?? '')),
+                'sigla' => trim((string) ($dados['sigla'] ?? '')) ?: null,
+            ];
+
+            $timeModel->insert($novoTime);
+            $novoTime['id'] = $timeModel->getInsertID();
+
+            return $this->respondCreated(['data' => $novoTime]);
         } catch (\Throwable $e) {
             log_message('error', 'Erro ao salvar time: {error}', ['error' => $e->getMessage()]);
-            return redirect()->back()->withInput()->with('error', 'Não foi possível salvar o time.');
+            return $this->failServerError('Não foi possível salvar o time.');
         }
     }
 
-    public function update($id)
+    public function update($id = null)
     {
         $regras = [
             'nome' => 'required|min_length[2]',
@@ -76,39 +79,49 @@ class TimeController extends BaseController
         ];
 
         if (!$this->validate($regras)) {
-            return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
         try {
             $timeModel = new TimeModel();
 
             if (!$timeModel->find((int) $id)) {
-                return redirect()->to('/admin/times')->with('error', 'Time não encontrado.');
+                return $this->failNotFound('Time não encontrado.');
             }
 
-            $timeModel->update((int) $id, [
-                'nome' => trim((string) $this->request->getPost('nome')),
-                'tecnico' => trim((string) $this->request->getPost('tecnico')),
-                'sigla' => trim((string) $this->request->getPost('sigla')) ?: null,
-            ]);
+            $dados = $this->request->getJSON(true) ?? $this->request->getRawInput();
 
-            return redirect()->to('/admin/times')->with('success', 'Time atualizado com sucesso.');
+            $timeAtualizado = [
+                'nome' => trim((string) ($dados['nome'] ?? '')),
+                'tecnico' => trim((string) ($dados['tecnico'] ?? '')),
+                'sigla' => trim((string) ($dados['sigla'] ?? '')) ?: null,
+            ];
+
+            $timeModel->update((int) $id, $timeAtualizado);
+            $timeAtualizado['id'] = (int) $id;
+
+            return $this->respond(['data' => $timeAtualizado]);
         } catch (\Throwable $e) {
             log_message('error', 'Erro ao atualizar time: {error}', ['error' => $e->getMessage()]);
-            return redirect()->back()->withInput()->with('error', 'Não foi possível atualizar o time.');
+            return $this->failServerError('Não foi possível atualizar o time.');
         }
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
-        $timeModel = new TimeModel();
+        try {
+            $timeModel = new TimeModel();
 
-        if (!$timeModel->find((int) $id)) {
-            return redirect()->to('/admin/times')->with('error', 'Time não encontrado.');
+            if (!$timeModel->find((int) $id)) {
+                return $this->failNotFound('Time não encontrado.');
+            }
+
+            $timeModel->delete((int) $id);
+
+            return $this->respondDeleted(['id' => (int) $id]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao deletar time: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível remover o time.');
         }
-
-        $timeModel->delete((int) $id);
-
-        return redirect()->to('/admin/times')->with('success', 'Time removido com sucesso.');
     }
 }

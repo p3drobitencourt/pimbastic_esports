@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pimbastic Esports - Dashboard Cliente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Chakra Petch"', 'sans-serif'],
+                        bebas: ['"Bebas Neue"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-1: #081019;
+            --bg-2: #132737;
+            --card: rgba(10, 20, 32, 0.7);
+            --border: rgba(255, 255, 255, 0.14);
+        }
+        body {
+            background: linear-gradient(140deg, var(--bg-1), var(--bg-2));
+            color: #f4f7fb;
+            min-height: 100vh;
+        }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <header class="bg-black/40 border-b border-white/10 px-6 py-4 flex justify-between items-center">
+        <div class="font-bebas text-2xl text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 font-bold">
+            PIMBASTIC ESPORTS
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right hidden sm:block">
+                <div id="display-user-name" class="text-sm font-bold text-cyan-400">...</div>
+                <div id="display-user-role" class="text-xs text-gray-500 uppercase">...</div>
+            </div>
+            <button id="btn-logout" class="bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-500/30">Sair</button>
+        </div>
+    </header>
+
+    <main class="p-6 max-w-5xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Meu Dashboard</h1>
+        
+        <div id="error-alert" class="hidden mb-6"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="panel p-6">
+                <h2 class="text-lg text-gray-400 mb-2 uppercase tracking-wider">Saldo Disponível</h2>
+                <div id="saldo-display" class="text-4xl font-bebas text-emerald-400 font-bold mb-4">R$ 0,00</div>
+                
+                <form id="form-saldo" class="flex gap-2">
+                    <input type="number" id="valor-saldo" step="0.01" min="1" required placeholder="Adicionar R$" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none w-32">
+                    <button type="submit" class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">Depositar</button>
+                </form>
+            </div>
+            
+            <div class="panel p-6">
+                <h2 class="text-lg text-gray-400 mb-2 uppercase tracking-wider">Resumo de Apostas</h2>
+                <div class="flex justify-between items-center mt-4">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-500">Pendentes</div>
+                        <div id="apostas-pendentes" class="text-2xl font-bold text-yellow-400">0</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-500">Ganhas</div>
+                        <div id="apostas-ganhas" class="text-2xl font-bold text-emerald-400">0</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-500">Perdidas</div>
+                        <div id="apostas-perdidas" class="text-2xl font-bold text-red-400">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel p-6">
+            <h2 class="text-lg font-bold mb-4">Histórico Recente</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-white/10 text-gray-400 uppercase tracking-wider">
+                            <th class="pb-3">Data</th>
+                            <th class="pb-3">Jogo</th>
+                            <th class="pb-3">Palpite</th>
+                            <th class="pb-3">Valor</th>
+                            <th class="pb-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historico-body">
+                        <tr><td colspan="5" class="py-4 text-center text-gray-500">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { apiFetch, showError, hideError } from './js/api.js';
+        import { requireAuth } from './js/auth.js';
+
+        // Requer autenticação de cliente
+        requireAuth('cliente');
+
+        async function carregarDashboard() {
+            try {
+                const res = await apiFetch('/cliente/dashboard');
+                
+                // Atualiza Saldo
+                document.getElementById('saldo-display').textContent = `R$ ${parseFloat(res.saldo).toFixed(2)}`;
+                
+                // Atualiza contadores fictícios baseados no histórico
+                const historico = res.historico_apostas || [];
+                document.getElementById('apostas-pendentes').textContent = historico.filter(a => a.status === 'pendente').length;
+                document.getElementById('apostas-ganhas').textContent = historico.filter(a => a.status === 'ganha').length;
+                document.getElementById('apostas-perdidas').textContent = historico.filter(a => a.status === 'perdida').length;
+
+                // Tabela
+                const tbody = document.getElementById('historico-body');
+                if (historico.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">Nenhuma aposta encontrada.</td></tr>';
+                } else {
+                    tbody.innerHTML = historico.map(aposta => `
+                        <tr class="border-b border-white/5">
+                            <td class="py-3">${new Date(aposta.criado_em).toLocaleDateString()}</td>
+                            <td class="py-3 font-semibold text-cyan-300">Jogo #${aposta.jogo_id}</td>
+                            <td class="py-3">${aposta.palpite === 'vitoria_time1' ? 'Time 1' : (aposta.palpite === 'vitoria_time2' ? 'Time 2' : 'Empate')}</td>
+                            <td class="py-3">R$ ${parseFloat(aposta.valor).toFixed(2)}</td>
+                            <td class="py-3">
+                                <span class="px-2 py-1 rounded text-xs uppercase ${aposta.status === 'ganha' ? 'bg-emerald-500/20 text-emerald-400' : (aposta.status === 'perdida' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400')}">
+                                    ${aposta.status}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+            } catch (error) {
+                showError('error-alert', error);
+            }
+        }
+
+        // Depósito
+        document.getElementById('form-saldo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError('error-alert');
+            const valor = document.getElementById('valor-saldo').value;
+            try {
+                await apiFetch('/cliente/saldo', {
+                    method: 'POST',
+                    body: JSON.stringify({ valor })
+                });
+                document.getElementById('valor-saldo').value = '';
+                alert('Saldo adicionado com sucesso!');
+                carregarDashboard();
+            } catch (error) {
+                showError('error-alert', error);
+            }
+        });
+
+        // Init
+        document.addEventListener('DOMContentLoaded', carregarDashboard);
+    </script>
+</body>
+</html>
