@@ -38,7 +38,7 @@ class TimeController extends ResourceController
         }
     }
 
-    public function store()
+    public function create()
     {
         $regras = [
             'nome' => 'required|min_length[2]',

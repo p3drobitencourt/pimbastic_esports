@@ -72,7 +72,7 @@
 
             <p class="mt-8 text-sm text-gray-400">
                 Não tem uma conta? 
-                <a href="/cadastro.html" class="text-emerald-400 hover:text-cyan-400 font-semibold transition-colors">Cadastre-se</a>
+                <a href="cadastro.html" class="text-emerald-400 hover:text-cyan-400 font-semibold transition-colors">Cadastre-se</a>
             </p>
         </main>
     </div>
@@ -109,9 +109,9 @@
 
                     // Redireciona com base no perfil
                     if (res.data.perfil === 'admin') {
-                        window.location.href = '/admin-dashboard.html';
+                        window.location.href = 'admin-dashboard.html';
                     } else {
-                        window.location.href = '/cliente-dashboard.html';
+                        window.location.href = 'cliente-dashboard.html';
                     }
                 }
             } catch (error) {

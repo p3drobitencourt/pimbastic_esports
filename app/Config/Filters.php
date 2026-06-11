@@ -98,8 +98,8 @@ class Filters extends BaseFilters
      */
     public array $filters = [
         'guest'   => ['before' => ['auth/login', 'auth/register']],
-        'auth'    => ['before' => ['admin/*', 'cliente/*', 'apostas/*']],
-        'admin'   => ['before' => ['admin/*']],
-        'cliente' => ['before' => ['cliente/*', 'apostas/*']],
+        'auth'    => ['before' => ['admin/*', 'admin', 'cliente/*', 'cliente', 'apostas/*', 'apostas']],
+        'admin'   => ['before' => ['admin/*', 'admin']],
+        'cliente' => ['before' => ['cliente/*', 'cliente', 'apostas/*', 'apostas']],
     ];
 }

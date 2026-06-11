@@ -32,8 +32,8 @@ class ApostaService
     {
         $jogo = $this->jogoModel->find((int) $dados['jogo_id']);
 
-        if (!$jogo || strtotime($jogo['data_horario']) <= time()) {
-            return ['success' => false, 'message' => 'Jogo inválido ou encerrado.'];
+        if (!$jogo || strtotime($jogo['data_horario']) <= strtotime('+30 minutes')) {
+            return ['success' => false, 'message' => 'Apostas encerradas para este jogo. O prazo limite é 30 minutos antes da partida.'];
         }
 
         $oddMap = [
@@ -62,8 +62,8 @@ class ApostaService
     {
         $jogo = $this->jogoModel->find((int) $dados['jogo_id']);
 
-        if (!$jogo || strtotime($jogo['data_horario']) <= time()) {
-            return ['success' => false, 'message' => 'Jogo inválido ou encerrado.'];
+        if (!$jogo || strtotime($jogo['data_horario']) <= strtotime('+30 minutes')) {
+            return ['success' => false, 'message' => 'Apostas encerradas para este jogo. O prazo limite é 30 minutos antes da partida.'];
         }
 
         $oddMap = [

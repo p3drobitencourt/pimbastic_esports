@@ -14,7 +14,7 @@ export function getUser() {
 
 export function requireAuth(expectedPerfil = null) {
     if (!isAuthenticated()) {
-        window.location.href = '/login.html';
+        window.location.href = 'login.html';
         return false;
     }
 
@@ -23,9 +23,9 @@ export function requireAuth(expectedPerfil = null) {
         if (!user || user.perfil !== expectedPerfil) {
             // Se tentar acessar uma tela com perfil errado, manda pra home apropriada
             if (user && user.perfil === 'admin') {
-                window.location.href = '/admin-dashboard.html';
+                window.location.href = 'admin-dashboard.html';
             } else {
-                window.location.href = '/cliente-dashboard.html';
+                window.location.href = 'cliente-dashboard.html';
             }
             return false;
         }
@@ -38,9 +38,9 @@ export function requireGuest() {
     if (isAuthenticated()) {
         const user = getUser();
         if (user && user.perfil === 'admin') {
-            window.location.href = '/admin-dashboard.html';
+            window.location.href = 'admin-dashboard.html';
         } else {
-            window.location.href = '/cliente-dashboard.html';
+            window.location.href = 'cliente-dashboard.html';
         }
         return false;
     }
@@ -50,7 +50,7 @@ export function requireGuest() {
 export function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
-    window.location.href = '/login.html';
+    window.location.href = 'login.html';
 }
 
 // Vincula o botão de logout se existir na tela

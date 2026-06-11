@@ -8,6 +8,11 @@ use CodeIgniter\Router\RouteCollection;
 
 $routes->setAutoRoute(false);
 
+// ── CORS Preflight (GLOBAL) ─────────────────────────────────
+$routes->options('(:any)', static function () {
+    return service('response')->setStatusCode(200);
+});
+
 // ── Auth (público) ──────────────────────────────────────────
 $routes->post('auth/login', 'AuthController::login');
 $routes->post('auth/register', 'AuthController::register');

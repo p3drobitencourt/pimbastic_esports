@@ -15,7 +15,7 @@ class ApostaController extends ResourceController
 
     public function store()
     {
-        $clienteId = (int) ($this->session->get('cliente_id') ?? 0);
+        $clienteId = (int) (session()->get('cliente_id') ?? 0);
 
         if ($clienteId <= 0) {
             return $this->failUnauthorized('Cliente não autenticado.');
@@ -48,7 +48,7 @@ class ApostaController extends ResourceController
 
     public function update($id = null)
     {
-        $clienteId = (int) ($this->session->get('cliente_id') ?? 0);
+        $clienteId = (int) (session()->get('cliente_id') ?? 0);
 
         if ($clienteId <= 0) {
             return $this->failUnauthorized('Cliente não autenticado.');
@@ -81,7 +81,7 @@ class ApostaController extends ResourceController
 
     public function delete($id = null)
     {
-        $clienteId = (int) ($this->session->get('cliente_id') ?? 0);
+        $clienteId = (int) (session()->get('cliente_id') ?? 0);
         
         if ($clienteId <= 0) {
             return $this->failUnauthorized('Cliente não autenticado.');

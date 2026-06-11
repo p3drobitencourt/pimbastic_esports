@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pimbastic Esports - Admin Dashboard</title>
+    <title>Pimbastic Esports - Liquidação</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -52,53 +52,40 @@
             <div id="display-user-role" class="text-xs text-gray-500 uppercase mb-8">...</div>
 
             <nav class="space-y-2">
-                <a href="admin-dashboard.html" class="block px-3 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold">Dashboard</a>
+                <a href="admin-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-white/5 text-gray-400 transition-colors">Dashboard</a>
                 <a href="campeonatos.html" class="block px-3 py-2 rounded-lg hover:bg-white/5 text-gray-400 transition-colors">Campeonatos</a>
                 <a href="times.html" class="block px-3 py-2 rounded-lg hover:bg-white/5 text-gray-400 transition-colors">Times</a>
                 <a href="jogos.html" class="block px-3 py-2 rounded-lg hover:bg-white/5 text-gray-400 transition-colors">Jogos</a>
-                <a href="liquidacao.html" class="block px-3 py-2 rounded-lg hover:bg-white/5 text-gray-400 transition-colors">Liquidação</a>
+                <a href="liquidacao.html" class="block px-3 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold">Liquidação</a>
             </nav>
         </div>
         <button id="btn-logout" class="mt-8 bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg text-sm font-semibold transition-colors w-full">Sair do Sistema</button>
     </aside>
 
     <main class="flex-grow p-6 md:p-8">
-        <h1 class="text-2xl font-bold mb-6">Métricas Gerais</h1>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bebas text-cyan-400">Liquidação de Apostas</h1>
+        </div>
+        
+        <p class="text-gray-400 text-sm mb-6 max-w-3xl">Selecione o vencedor das partidas pendentes para processar e pagar as apostas dos clientes.</p>
         
         <div id="error-alert" class="hidden mb-6"></div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="panel p-6 text-center">
-                <div class="text-xs text-gray-400 uppercase tracking-wider mb-2">Total de Campeonatos</div>
-                <div id="metric-campeonatos" class="text-3xl font-bebas text-cyan-400 font-bold">0</div>
-            </div>
-            <div class="panel p-6 text-center">
-                <div class="text-xs text-gray-400 uppercase tracking-wider mb-2">Total de Times</div>
-                <div id="metric-times" class="text-3xl font-bebas text-cyan-400 font-bold">0</div>
-            </div>
-            <div class="panel p-6 text-center">
-                <div class="text-xs text-gray-400 uppercase tracking-wider mb-2">Total de Jogos</div>
-                <div id="metric-jogos" class="text-3xl font-bebas text-cyan-400 font-bold">0</div>
-            </div>
-            <div class="panel p-6 text-center">
-                <div class="text-xs text-gray-400 uppercase tracking-wider mb-2">Apostas Registradas</div>
-                <div id="metric-apostas" class="text-3xl font-bebas text-emerald-400 font-bold">0</div>
-            </div>
+        <div id="success-alert" class="hidden mb-6 bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 p-4 rounded-xl shadow-lg mt-4">
+            <span class="font-bold">Sucesso:</span> <br> <span id="success-message"></span>
         </div>
 
         <div class="panel p-6">
-            <h2 class="text-lg font-bold mb-4">Jogos Recentes Cadastrados</h2>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
                     <thead>
                         <tr class="border-b border-white/10 text-gray-400 uppercase tracking-wider">
-                            <th class="pb-3">Data/Hora</th>
-                            <th class="pb-3">Campeonato</th>
-                            <th class="pb-3">Time 1 vs Time 2</th>
-                            <th class="pb-3">Status</th>
+                            <th class="pb-3 px-2">Data/Hora</th>
+                            <th class="pb-3 px-2">Campeonato</th>
+                            <th class="pb-3 px-2">Confronto</th>
+                            <th class="pb-3 px-2 text-right">Definir Resultado</th>
                         </tr>
                     </thead>
-                    <tbody id="jogos-body">
+                    <tbody id="table-body">
                         <tr><td colspan="4" class="py-4 text-center text-gray-500">Carregando dados...</td></tr>
                     </tbody>
                 </table>
@@ -107,61 +94,67 @@
     </main>
 
     <script type="module">
-        import { apiFetch, showError } from './js/api.js';
+        import { apiFetch, showError, hideError } from './js/api.js';
         import { requireAuth } from './js/auth.js';
 
-        // Requer perfil 'admin'
         requireAuth('admin');
 
-        async function carregarMeticas() {
+        // Expõe a função globalmente para os botões HTML chamarem
+        window.liquidarJogo = async function(jogoId, resultado) {
+            if(!confirm(`Confirma o resultado como ${resultado.toUpperCase()}? Esta ação é irreversível.`)) return;
+
             try {
-                const res = await apiFetch('/admin/dashboard');
-                const dados = res.data;
+                hideError('error-alert');
+                document.getElementById('success-alert').classList.add('hidden');
                 
-                document.getElementById('metric-campeonatos').textContent = dados.metricas.campeonatos_total || 0;
-                document.getElementById('metric-times').textContent = dados.metricas.times_total || 0;
-                document.getElementById('metric-jogos').textContent = dados.metricas.jogos_total || 0;
-                // Como não tem métrica específica de apostas na API original do dashboard, mantemos 0 ou liquidacoes pendentes
-                document.getElementById('metric-apostas').textContent = dados.metricas.liquidacoes_pendentes || 0;
+                const res = await apiFetch(`/admin/liquidacao/processar/${jogoId}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ resultado })
+                });
+
+                document.getElementById('success-message').textContent = res.message || 'Liquidação processada com sucesso!';
+                document.getElementById('success-alert').classList.remove('hidden');
                 
+                // Recarrega a lista
+                carregarLista();
+
             } catch (error) {
                 showError('error-alert', error);
             }
-        }
+        };
 
-        async function carregarJogosRecentes() {
+        async function carregarLista() {
             try {
-                const res = await apiFetch('/admin/jogos-recentes');
-                const jogos = res.data;
-                const tbody = document.getElementById('jogos-body');
+                const res = await apiFetch('/admin/dashboard'); // Usa os dados do dashboard que já traz os pendentes
+                const list = res.data.jogos_pendentes;
+                const tbody = document.getElementById('table-body');
                 
-                if (!jogos || jogos.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">Nenhum jogo cadastrado.</td></tr>';
+                if (!list || list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-emerald-500">Nenhum jogo pendente de liquidação!</td></tr>';
                     return;
                 }
 
-                tbody.innerHTML = jogos.slice(0, 10).map(jogo => `
+                tbody.innerHTML = list.map(jogo => `
                     <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
                         <td class="py-3 px-2">${new Date(jogo.data_horario).toLocaleString('pt-BR')}</td>
                         <td class="py-3 px-2 font-semibold text-cyan-300">${jogo.campeonato || `Camp #${jogo.campeonato_id}`}</td>
                         <td class="py-3 px-2">${jogo.casa || `Time #${jogo.time_casa_id}`} <span class="text-gray-500 text-xs mx-1">vs</span> ${jogo.fora || `Time #${jogo.time_fora_id}`}</td>
-                        <td class="py-3 px-2">
-                            <span class="px-2 py-1 rounded text-xs uppercase ${jogo.status === 'finalizado' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'}">
-                                ${jogo.status}
-                            </span>
+                        <td class="py-3 px-2 text-right">
+                            <button class="bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 text-xs font-bold py-1 px-3 rounded uppercase mr-1 transition-colors" onclick="liquidarJogo(${jogo.id}, 'vitoria_casa')">Casa Venceu</button>
+                            <button class="bg-gray-500/20 hover:bg-gray-500/40 text-gray-400 text-xs font-bold py-1 px-3 rounded uppercase mr-1 transition-colors" onclick="liquidarJogo(${jogo.id}, 'empate')">Empate</button>
+                            <button class="bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 text-xs font-bold py-1 px-3 rounded uppercase transition-colors" onclick="liquidarJogo(${jogo.id}, 'vitoria_fora')">Fora Venceu</button>
                         </td>
                     </tr>
                 `).join('');
 
             } catch (error) {
-                // Exibe erro no console sem bloquear as métricas
-                console.error(error);
+                showError('error-alert', error);
+                document.getElementById('table-body').innerHTML = '<tr><td colspan="4" class="py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            carregarMeticas();
-            carregarJogosRecentes();
+            carregarLista();
         });
     </script>
 </body>

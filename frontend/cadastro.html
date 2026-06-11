@@ -78,7 +78,7 @@
 
             <p class="mt-8 text-sm text-gray-400">
                 Já tem conta? 
-                <a href="/login.html" class="text-cyan-400 hover:text-emerald-400 font-semibold transition-colors">Faça Login</a>
+                <a href="login.html" class="text-cyan-400 hover:text-emerald-400 font-semibold transition-colors">Faça Login</a>
             </p>
         </main>
     </div>
@@ -110,7 +110,7 @@
 
                 if (res && res.message) {
                     const successDiv = document.getElementById('success-alert');
-                    successDiv.innerHTML = res.message + ' <a href="/login.html" class="underline font-bold ml-2">Ir para Login</a>';
+                    successDiv.innerHTML = res.message + ' <a href="login.html" class="underline font-bold ml-2">Ir para Login</a>';
                     successDiv.classList.remove('hidden');
                     document.getElementById('registerForm').reset();
                 }

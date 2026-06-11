@@ -52,7 +52,7 @@ class JogoController extends ResourceController
         }
     }
 
-    public function store()
+    public function create()
     {
         $regras = [
             'campeonato_id' => 'required|integer',
@@ -137,8 +137,13 @@ class JogoController extends ResourceController
         try {
             $jogoModel = new JogoModel();
 
-            if (!$jogoModel->find((int) $id)) {
+            $jogoAntigo = $jogoModel->find((int) $id);
+            if (!$jogoAntigo) {
                 return $this->failNotFound('Jogo não encontrado.');
+            }
+
+            if (($jogoAntigo['status'] ?? '') === 'liquidado') {
+                return $this->fail('Não é possível editar um jogo que já foi liquidado.');
             }
 
             $jogoAtualizado = [
@@ -166,16 +171,25 @@ class JogoController extends ResourceController
         try {
             $jogoModel = new JogoModel();
 
-            if (!$jogoModel->find((int) $id)) {
+            $jogoParaExcluir = $jogoModel->find((int) $id);
+            if ($jogoParaExcluir) {
+                if (($jogoParaExcluir['status'] ?? '') === 'liquidado') {
+                    return $this->fail('Não é possível excluir um jogo que já foi liquidado.');
+                }
+                
+                $apostaModel = new \App\Models\ApostaModel();
+                if ($apostaModel->where('jogo_id', (int) $id)->countAllResults() > 0) {
+                    return $this->fail('Não é possível excluir um jogo que já possui apostas registradas.');
+                }
+                $jogoModel->delete((int) $id);
+            } else {
                 return $this->failNotFound('Jogo não encontrado.');
             }
-
-            $jogoModel->delete((int) $id);
 
             return $this->respondDeleted(['id' => (int) $id]);
         } catch (\Throwable $e) {
             log_message('error', 'Erro ao deletar jogo: {error}', ['error' => $e->getMessage()]);
-            return $this->failServerError('Não foi possível remover o jogo.');
+            return $this->failServerError('Não foi possível remover o jogo. Verifique as dependências.');
         }
     }
 }

@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://localhost:8082';
+export const API_BASE_URL = 'http://127.0.0.1:8082';
 
 export async function apiFetch(endpoint, options = {}) {
     const token = localStorage.getItem('token');
@@ -21,11 +21,11 @@ export async function apiFetch(endpoint, options = {}) {
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
         
-        // Se a API retornar 401 Unauthorized, token expirou ou é inválido
-        if (response.status === 401) {
+        // Se a API retornar 401 Unauthorized e não for a rota de login, o token expirou
+        if (response.status === 401 && endpoint !== '/auth/login') {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
-            window.location.href = '/login.html';
+            window.location.href = 'login.html';
             return null;
         }
 

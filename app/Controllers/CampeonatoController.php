@@ -39,7 +39,7 @@ class CampeonatoController extends ResourceController
         }
     }
 
-    public function store()
+    public function create()
     {
         $regras = [
             'nome' => 'required|min_length[3]',

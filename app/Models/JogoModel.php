@@ -76,7 +76,8 @@ class JogoModel extends Model
             ->join('campeonato', 'campeonato.id = jogo.campeonato_id')
             ->join('time as tc', 'tc.id = jogo.time_casa_id')
             ->join('time as tf', 'tf.id = jogo.time_fora_id')
-            ->where('jogo.data_horario >=', date('Y-m-d H:i:s'))
+            ->where('jogo.status !=', 'liquidado')
+            ->where('jogo.data_horario >=', date('Y-m-d H:i:s', strtotime('+30 minutes')))
             ->orderBy('jogo.data_horario', 'ASC')
             ->findAll();
     }

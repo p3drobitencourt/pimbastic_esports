@@ -89,6 +89,13 @@
             </div>
         </div>
 
+        <div class="panel p-6 mb-8">
+            <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Jogos ao Vivo & Próximos</h2>
+            <div id="jogos-lista" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="text-gray-500 col-span-full">Carregando jogos...</div>
+            </div>
+        </div>
+
         <div class="panel p-6">
             <h2 class="text-lg font-bold mb-4">Histórico Recente</h2>
             <div class="overflow-x-auto">
@@ -108,6 +115,38 @@
                 </table>
             </div>
         </div>
+
+        <!-- Modal de Aposta -->
+        <div id="aposta-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+            <div class="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                <h2 class="text-2xl font-bebas text-emerald-400 mb-2">Fazer Aposta</h2>
+                <div id="aposta-jogo-nome" class="text-sm text-gray-400 mb-4 font-semibold"></div>
+                
+                <div id="modal-error-alert" class="hidden mb-4 bg-red-500/15 border border-red-500/35 text-red-300 p-3 rounded-lg text-sm"></div>
+
+                <form id="aposta-form" onsubmit="event.preventDefault(); confirmarAposta();">
+                    <input type="hidden" id="aposta-jogo-id">
+                    
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-3 text-center">Selecione seu Palpite</label>
+                        <div id="aposta-tipo-container" class="grid grid-cols-3 gap-3">
+                            <!-- Botoes dinamicos -->
+                        </div>
+                        <input type="hidden" id="aposta-tipo" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Valor da Aposta (R$)</label>
+                        <input id="aposta-valor" type="number" step="0.01" min="1" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors" placeholder="Ex: 50.00" required>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" onclick="fecharModalAposta()" class="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors font-semibold">Cancelar</button>
+                        <button type="submit" id="btn-apostar" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-colors shadow-lg">Confirmar Aposta</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </main>
 
     <script type="module">
@@ -119,34 +158,71 @@
 
         async function carregarDashboard() {
             try {
-                const res = await apiFetch('/cliente/dashboard');
+                const response = await apiFetch('/cliente/dashboard');
+                const data = response.data || response;
                 
                 // Atualiza Saldo
-                document.getElementById('saldo-display').textContent = `R$ ${parseFloat(res.saldo).toFixed(2)}`;
+                document.getElementById('saldo-display').textContent = `R$ ${parseFloat(data.saldo_realtime || 0).toFixed(2)}`;
                 
-                // Atualiza contadores fictícios baseados no histórico
-                const historico = res.historico_apostas || [];
-                document.getElementById('apostas-pendentes').textContent = historico.filter(a => a.status === 'pendente').length;
-                document.getElementById('apostas-ganhas').textContent = historico.filter(a => a.status === 'ganha').length;
-                document.getElementById('apostas-perdidas').textContent = historico.filter(a => a.status === 'perdida').length;
+                // Atualiza contadores usando resumo do ApostaService
+                const resumo = data.resumo || {};
+                document.getElementById('apostas-pendentes').textContent = resumo.pendentes || 0;
+                document.getElementById('apostas-ganhas').textContent = resumo.ganhas || 0;
+                document.getElementById('apostas-perdidas').textContent = resumo.perdidas || 0;
 
-                // Tabela
+                // Tabela de Histórico
+                const historico = data.historico || [];
                 const tbody = document.getElementById('historico-body');
                 if (historico.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">Nenhuma aposta encontrada.</td></tr>';
                 } else {
                     tbody.innerHTML = historico.map(aposta => `
-                        <tr class="border-b border-white/5">
-                            <td class="py-3">${new Date(aposta.criado_em).toLocaleDateString()}</td>
-                            <td class="py-3 font-semibold text-cyan-300">Jogo #${aposta.jogo_id}</td>
-                            <td class="py-3">${aposta.palpite === 'vitoria_time1' ? 'Time 1' : (aposta.palpite === 'vitoria_time2' ? 'Time 2' : 'Empate')}</td>
-                            <td class="py-3">R$ ${parseFloat(aposta.valor).toFixed(2)}</td>
-                            <td class="py-3">
-                                <span class="px-2 py-1 rounded text-xs uppercase ${aposta.status === 'ganha' ? 'bg-emerald-500/20 text-emerald-400' : (aposta.status === 'perdida' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400')}">
+                        <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                            <td class="py-3 px-2 text-gray-400">${new Date(aposta.criado_em).toLocaleDateString()}</td>
+                            <td class="py-3 px-2 font-semibold text-cyan-300">Jogo #${aposta.jogo_id}</td>
+                            <td class="py-3 px-2">${aposta.tipo_escolhido.replace('vitoria_casa', 'Vit. Casa').replace('vitoria_fora', 'Vit. Fora').replace('empate', 'Empate')} (x${aposta.odd_escolhida})</td>
+                            <td class="py-3 px-2 text-white font-bold">R$ ${parseFloat(aposta.valor).toFixed(2)}</td>
+                            <td class="py-3 px-2">
+                                <span class="px-2 py-1 rounded text-xs uppercase font-bold ${aposta.status === 'ganha' ? 'bg-emerald-500/20 text-emerald-400' : (aposta.status === 'perdida' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400')}">
                                     ${aposta.status}
                                 </span>
                             </td>
                         </tr>
+                    `).join('');
+                }
+
+                // Renderizar Jogos Disponíveis
+                const jogos = data.jogos || [];
+                const jogosDiv = document.getElementById('jogos-lista');
+                if (jogos.length === 0) {
+                    jogosDiv.innerHTML = '<div class="text-gray-500 col-span-full">Nenhum jogo disponível para aposta no momento.</div>';
+                } else {
+                    jogosDiv.innerHTML = jogos.map(jogo => `
+                        <div class="bg-gradient-to-br from-black/60 to-black/30 border border-white/10 p-5 rounded-2xl hover:border-cyan-500/50 hover:shadow-[0_0_15px_rgba(34,211,238,0.15)] transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-4">
+                                    <span class="px-2 py-1 bg-cyan-900/40 text-cyan-400 text-[10px] uppercase font-bold rounded border border-cyan-500/20">${jogo.camp_nome || 'Campeonato'}</span>
+                                    <span class="text-[11px] text-gray-400 font-semibold tracking-wider">${new Date(jogo.data_horario).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                </div>
+                                <div class="flex justify-between items-center mb-6">
+                                    <div class="text-center w-5/12">
+                                        <div class="font-bebas text-2xl truncate text-white" title="${jogo.casa}">${jogo.casa}</div>
+                                        <div class="text-xs text-gray-500 uppercase mt-1">Odd: <span class="text-emerald-400 font-bold">${parseFloat(jogo.odd_casa).toFixed(2)}</span></div>
+                                    </div>
+                                    <div class="text-center w-2/12 flex flex-col items-center">
+                                        <span class="text-gray-600 text-xs font-bold">VS</span>
+                                        <span class="text-[10px] text-gray-500 mt-1">Emp: ${parseFloat(jogo.odd_empate).toFixed(2)}</span>
+                                    </div>
+                                    <div class="text-center w-5/12">
+                                        <div class="font-bebas text-2xl truncate text-white" title="${jogo.fora}">${jogo.fora}</div>
+                                        <div class="text-xs text-gray-500 uppercase mt-1">Odd: <span class="text-emerald-400 font-bold">${parseFloat(jogo.odd_fora).toFixed(2)}</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="abrirModalAposta(${jogo.id}, '${jogo.casa} vs ${jogo.fora}', ${jogo.odd_casa}, ${jogo.odd_empate}, ${jogo.odd_fora})" class="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/50 font-bold py-2.5 rounded-xl transition-colors text-sm uppercase tracking-wide">
+                                Fazer Palpite
+                            </button>
+                        </div>
                     `).join('');
                 }
 
@@ -172,6 +248,75 @@
                 showError('error-alert', error);
             }
         });
+
+        // --- Funções de Aposta ---
+        window.abrirModalAposta = function(jogoId, nomeJogo, oddCasa, oddEmpate, oddFora) {
+            hideError('modal-error-alert');
+            document.getElementById('aposta-jogo-id').value = jogoId;
+            document.getElementById('aposta-jogo-nome').textContent = nomeJogo;
+            
+            const container = document.getElementById('aposta-tipo-container');
+            container.innerHTML = `
+                <label class="cursor-pointer relative">
+                    <input type="radio" name="tipo_aposta" value="casa" class="peer sr-only" onchange="document.getElementById('aposta-tipo').value = this.value">
+                    <div class="rounded-xl border border-white/10 bg-black/40 p-3 text-center peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 hover:border-white/30 transition-all shadow-sm">
+                        <div class="text-[10px] text-gray-400 uppercase font-bold mb-1">Casa</div>
+                        <div class="font-bebas text-2xl text-emerald-400">x${oddCasa || '1.00'}</div>
+                    </div>
+                </label>
+                <label class="cursor-pointer relative">
+                    <input type="radio" name="tipo_aposta" value="empate" class="peer sr-only" onchange="document.getElementById('aposta-tipo').value = this.value">
+                    <div class="rounded-xl border border-white/10 bg-black/40 p-3 text-center peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 hover:border-white/30 transition-all shadow-sm">
+                        <div class="text-[10px] text-gray-400 uppercase font-bold mb-1">Empate</div>
+                        <div class="font-bebas text-2xl text-emerald-400">x${oddEmpate || '1.00'}</div>
+                    </div>
+                </label>
+                <label class="cursor-pointer relative">
+                    <input type="radio" name="tipo_aposta" value="fora" class="peer sr-only" onchange="document.getElementById('aposta-tipo').value = this.value">
+                    <div class="rounded-xl border border-white/10 bg-black/40 p-3 text-center peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 hover:border-white/30 transition-all shadow-sm">
+                        <div class="text-[10px] text-gray-400 uppercase font-bold mb-1">Fora</div>
+                        <div class="font-bebas text-2xl text-emerald-400">x${oddFora || '1.00'}</div>
+                    </div>
+                </label>
+            `;
+            
+            document.getElementById('aposta-tipo').value = '';
+            
+            document.getElementById('aposta-valor').value = '';
+            document.getElementById('aposta-modal').classList.remove('hidden');
+        };
+
+        window.fecharModalAposta = function() {
+            document.getElementById('aposta-modal').classList.add('hidden');
+        };
+
+        window.confirmarAposta = async function() {
+            const jogo_id = document.getElementById('aposta-jogo-id').value;
+            const tipo = document.getElementById('aposta-tipo').value;
+            const valor = document.getElementById('aposta-valor').value;
+            const btn = document.getElementById('btn-apostar');
+
+            if (!jogo_id || !tipo || !valor) return;
+
+            try {
+                btn.textContent = 'Processando...';
+                btn.disabled = true;
+
+                await apiFetch('/apostas', {
+                    method: 'POST',
+                    body: JSON.stringify({ jogo_id, tipo, valor })
+                });
+
+                alert('Aposta registrada com sucesso!');
+                fecharModalAposta();
+                carregarDashboard(); // Atualiza saldo e histórico
+            } catch (error) {
+                showError('modal-error-alert', error);
+            } finally {
+                btn.textContent = 'Confirmar Aposta';
+                btn.disabled = false;
+            }
+        };
 
         // Init
         document.addEventListener('DOMContentLoaded', carregarDashboard);
