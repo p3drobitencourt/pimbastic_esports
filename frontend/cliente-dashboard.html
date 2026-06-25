@@ -74,16 +74,16 @@
                 <h2 class="text-lg text-gray-400 mb-2 uppercase tracking-wider">Resumo de Apostas</h2>
                 <div class="flex justify-between items-center mt-4">
                     <div class="text-center">
-                        <div class="text-sm text-gray-500">Pendentes</div>
-                        <div id="apostas-pendentes" class="text-2xl font-bold text-yellow-400">0</div>
+                        <div class="text-sm text-gray-500 uppercase tracking-wide">Pendentes</div>
+                        <div id="apostas-pendentes" class="text-3xl font-bebas text-yellow-400 mt-1">0</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-sm text-gray-500">Ganhas</div>
-                        <div id="apostas-ganhas" class="text-2xl font-bold text-emerald-400">0</div>
+                        <div class="text-sm text-gray-500 uppercase tracking-wide">Ganhas</div>
+                        <div id="apostas-ganhas" class="text-3xl font-bebas text-emerald-400 mt-1">0</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-sm text-gray-500">Perdidas</div>
-                        <div id="apostas-perdidas" class="text-2xl font-bold text-red-400">0</div>
+                        <div class="text-sm text-gray-500 uppercase tracking-wide">Perdidas</div>
+                        <div id="apostas-perdidas" class="text-3xl font-bebas text-red-400 mt-1">0</div>
                     </div>
                 </div>
             </div>
@@ -166,8 +166,8 @@
                 
                 // Atualiza contadores usando resumo do ApostaService
                 const resumo = data.resumo || {};
-                document.getElementById('apostas-pendentes').textContent = resumo.pendentes || 0;
-                document.getElementById('apostas-ganhas').textContent = resumo.ganhas || 0;
+                document.getElementById('apostas-pendentes').textContent = resumo.abertas || 0;
+                document.getElementById('apostas-ganhas').textContent = resumo.vencidas || 0;
                 document.getElementById('apostas-perdidas').textContent = resumo.perdidas || 0;
 
                 // Tabela de Histórico
