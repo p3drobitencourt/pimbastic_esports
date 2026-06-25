@@ -3,69 +3,73 @@
 namespace App\Controllers;
 
 use App\Models\CampeonatoModel;
+use CodeIgniter\RESTful\ResourceController;
 
-class CampeonatoController extends BaseController
+class CampeonatoController extends ResourceController
 {
+    protected $format = 'json';
+
     public function index()
     {
-        $campeonatoModel = new CampeonatoModel();
+        try {
+            $campeonatoModel = new CampeonatoModel();
+            // Para APIs é comum não forçar paginate de HTML, mas retornar findAll() ou array paginado.
+            $campeonatos = $campeonatoModel->orderBy('id', 'DESC')->findAll();
+            return $this->respond(['data' => $campeonatos]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao listar campeonatos: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível carregar os campeonatos.');
+        }
+    }
 
-        return $this->renderView('admin/campeonatos/index', [
-            'title' => 'Gerenciar Campeonatos - Pimbastic',
-            'campeonatos' => $campeonatoModel->orderBy('id', 'DESC')->paginate(10),
-            'pager' => $campeonatoModel->pager,
-        ]);
+    public function show($id = null)
+    {
+        try {
+            $campeonatoModel = new CampeonatoModel();
+            $campeonato = $campeonatoModel->find((int) $id);
+
+            if (!$campeonato) {
+                return $this->failNotFound('Campeonato não encontrado.');
+            }
+
+            return $this->respond(['data' => $campeonato]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao buscar campeonato: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível carregar o campeonato.');
+        }
     }
 
     public function create()
     {
-        return $this->renderView('admin/campeonatos/form', [
-            'title' => 'Novo Campeonato - Pimbastic',
-            'campeonato' => null
-        ]);
-    }
-
-    public function edit($id)
-    {
-        $campeonatoModel = new CampeonatoModel();
-        $campeonato = $campeonatoModel->find((int) $id);
-
-        if (!$campeonato) {
-            return redirect()->to('/admin/campeonatos')->with('error', 'Campeonato não encontrado.');
-        }
-
-        return $this->renderView('admin/campeonatos/form', [
-            'title' => 'Editar Campeonato #' . $id . ' - Pimbastic',
-            'campeonato' => $campeonato
-        ]);
-    }
-
-    public function store()
-    {
         $regras = [
             'nome' => 'required|min_length[3]',
             'pais' => 'permit_empty|min_length[2]'
         ];
 
         if (!$this->validate($regras)) {
-            return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
         try {
-            $campeonatoModel = new CampeonatoModel();
-            $campeonatoModel->insert([
-                'nome' => trim((string) $this->request->getPost('nome')),
-                'pais' => trim((string) $this->request->getPost('pais')) ?: null,
-            ]);
+            $dados = $this->request->getJSON(true) ?? $this->request->getPost();
 
-            return redirect()->to('/admin/campeonatos')->with('success', 'Campeonato registrado com sucesso.');
+            $campeonatoModel = new CampeonatoModel();
+            $novoCampeonato = [
+                'nome' => trim((string) ($dados['nome'] ?? '')),
+                'pais' => trim((string) ($dados['pais'] ?? '')) ?: null,
+            ];
+
+            $campeonatoModel->insert($novoCampeonato);
+            $novoCampeonato['id'] = $campeonatoModel->getInsertID();
+
+            return $this->respondCreated(['data' => $novoCampeonato]);
         } catch (\Throwable $e) {
             log_message('error', 'Erro ao salvar campeonato: {error}', ['error' => $e->getMessage()]);
-            return redirect()->back()->withInput()->with('error', 'Não foi possível salvar o campeonato.');
+            return $this->failServerError('Não foi possível salvar o campeonato.');
         }
     }
 
-    public function update($id)
+    public function update($id = null)
     {
         $regras = [
             'nome' => 'required|min_length[3]',
@@ -73,38 +77,48 @@ class CampeonatoController extends BaseController
         ];
 
         if (!$this->validate($regras)) {
-            return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
         try {
             $campeonatoModel = new CampeonatoModel();
 
             if (!$campeonatoModel->find((int) $id)) {
-                return redirect()->to('/admin/campeonatos')->with('error', 'Campeonato não encontrado.');
+                return $this->failNotFound('Campeonato não encontrado.');
             }
 
-            $campeonatoModel->update((int) $id, [
-                'nome' => trim((string) $this->request->getPost('nome')),
-                'pais' => trim((string) $this->request->getPost('pais')) ?: null,
-            ]);
+            $dados = $this->request->getJSON(true) ?? $this->request->getRawInput();
 
-            return redirect()->to('/admin/campeonatos')->with('success', 'Campeonato atualizado com sucesso.');
+            $campeonatoAtualizado = [
+                'nome' => trim((string) ($dados['nome'] ?? '')),
+                'pais' => trim((string) ($dados['pais'] ?? '')) ?: null,
+            ];
+
+            $campeonatoModel->update((int) $id, $campeonatoAtualizado);
+            $campeonatoAtualizado['id'] = (int) $id;
+
+            return $this->respond(['data' => $campeonatoAtualizado]);
         } catch (\Throwable $e) {
             log_message('error', 'Erro ao atualizar campeonato: {error}', ['error' => $e->getMessage()]);
-            return redirect()->back()->withInput()->with('error', 'Não foi possível atualizar o campeonato.');
+            return $this->failServerError('Não foi possível atualizar o campeonato.');
         }
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
-        $campeonatoModel = new CampeonatoModel();
+        try {
+            $campeonatoModel = new CampeonatoModel();
 
-        if (!$campeonatoModel->find((int) $id)) {
-            return redirect()->to('/admin/campeonatos')->with('error', 'Campeonato não encontrado.');
+            if (!$campeonatoModel->find((int) $id)) {
+                return $this->failNotFound('Campeonato não encontrado.');
+            }
+
+            $campeonatoModel->delete((int) $id);
+
+            return $this->respondDeleted(['id' => (int) $id]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao deletar campeonato: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível remover o campeonato.');
         }
-
-        $campeonatoModel->delete((int) $id);
-
-        return redirect()->to('/admin/campeonatos')->with('success', 'Campeonato removido com sucesso.');
     }
 }

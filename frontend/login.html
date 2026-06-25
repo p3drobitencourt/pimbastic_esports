@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pimbastic Esports - Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Chakra Petch"', 'sans-serif'],
+                        bebas: ['"Bebas Neue"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-1: #081019;
+            --bg-2: #132737;
+            --card: rgba(10, 20, 32, 0.7);
+            --border: rgba(255, 255, 255, 0.14);
+        }
+        body {
+            background: radial-gradient(1100px 600px at 12% -8%, #1c3f58 0%, transparent 60%),
+                        radial-gradient(900px 500px at 90% 110%, #114b5f 0%, transparent 60%),
+                        linear-gradient(140deg, var(--bg-1), var(--bg-2));
+            color: #f4f7fb;
+            min-height: 100vh;
+        }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4 font-sans">
+    <div class="w-full max-w-[440px] z-10">
+        <main class="panel p-8 sm:p-10 text-center">
+            <div class="font-bebas text-5xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 font-bold mb-1">
+                PIMBASTIC ESPORTS
+            </div>
+            <p class="text-gray-400 text-sm mb-6 uppercase tracking-wider">Acesse sua Conta</p>
+
+            <!-- Container de Erro (Oculto por padrão) -->
+            <div id="error-alert" class="hidden mb-6 text-left"></div>
+
+            <form id="loginForm" class="space-y-5 text-left">
+                <div>
+                    <label for="email" class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">E-mail</label>
+                    <input type="email" id="email" required placeholder="ex: admin@pimbastic.com" class="w-full bg-black/40 border border-white/10 focus:border-cyan-400 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none transition-colors">
+                </div>
+                
+                <div>
+                    <label for="senha" class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Senha</label>
+                    <input type="password" id="senha" required placeholder="Digite sua senha" class="w-full bg-black/40 border border-white/10 focus:border-cyan-400 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none transition-colors">
+                </div>
+
+                <button type="submit" id="btn-submit" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-gray-950 font-bold uppercase tracking-wider py-3.5 rounded-xl transition-all duration-200">
+                    Entrar no Sistema
+                </button>
+            </form>
+
+            <p class="mt-8 text-sm text-gray-400">
+                Não tem uma conta? 
+                <a href="cadastro.html" class="text-emerald-400 hover:text-cyan-400 font-semibold transition-colors">Cadastre-se</a>
+            </p>
+        </main>
+    </div>
+
+    <!-- Scripts Modulares -->
+    <script type="module">
+        import { apiFetch, showError, hideError } from './js/api.js';
+        import { requireGuest } from './js/auth.js';
+
+        // Evita que usuário logado veja o login
+        requireGuest();
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError('error-alert');
+            
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const btn = document.getElementById('btn-submit');
+
+            try {
+                btn.textContent = 'Carregando...';
+                btn.disabled = true;
+
+                const res = await apiFetch('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, senha })
+                });
+
+                // Se houver sucesso, armazena no localStorage
+                if (res && res.token) {
+                    localStorage.setItem('token', res.token);
+                    localStorage.setItem('usuario', JSON.stringify(res.data));
+
+                    // Redireciona com base no perfil
+                    if (res.data.perfil === 'admin') {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        window.location.href = 'cliente-dashboard.html';
+                    }
+                }
+            } catch (error) {
+                btn.textContent = 'Entrar no Sistema';
+                btn.disabled = false;
+                showError('error-alert', error);
+            }
+        });
+    </script>
+</body>
+</html>

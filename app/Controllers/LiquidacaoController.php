@@ -3,17 +3,23 @@
 namespace App\Controllers;
 
 use App\Models\ResolucaoModel;
+use CodeIgniter\RESTful\ResourceController;
 
-class LiquidacaoController extends BaseController
+class LiquidacaoController extends ResourceController
 {
+    protected $format = 'json';
+
     public function index()
     {
-        $resolucaoModel = new ResolucaoModel();
+        try {
+            $resolucaoModel = new ResolucaoModel();
+            $jogos = $resolucaoModel->getJogosPendentes();
 
-        return $this->renderView('admin/liquidacao/index', [
-            'title' => 'Liquidação de Apostas - Pimbastic',
-            'jogos' => $resolucaoModel->getJogosPendentes(),
-        ]);
+            return $this->respond(['data' => $jogos]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao listar jogos para liquidação: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível carregar as liquidações.');
+        }
     }
 
     public function processar(int $jogoId)
@@ -23,38 +29,46 @@ class LiquidacaoController extends BaseController
         ];
 
         if (!$this->validate($regras)) {
-            return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
-        $resultado = (string) $this->request->getPost('resultado');
+        try {
+            $dados = $this->request->getJSON(true) ?? $this->request->getRawInput();
+            $resultado = (string) ($dados['resultado'] ?? '');
 
-        $resolucaoModel = new ResolucaoModel();
-        $resposta = $resolucaoModel->processarResultado($jogoId, $resultado);
+            $resolucaoModel = new ResolucaoModel();
+            $resposta = $resolucaoModel->processarResultado($jogoId, $resultado);
 
-        if (!$resposta['success']) {
-            return redirect()->back()->withInput()->with('error', $resposta['message']);
+            if (!$resposta['success']) {
+                return $this->fail($resposta['message'], 400);
+            }
+
+            return $this->respond(['message' => $resposta['message']]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao processar liquidação: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Erro interno ao processar a liquidação.');
         }
-
-        return redirect()->to('/admin/liquidacao')->with('success', $resposta['message']);
     }
 
     /**
-     * Página de debug para administradores: mostra jogos pendentes e apostas relacionadas.
+     * Endpoint de debug para administradores: mostra jogos pendentes e apostas relacionadas.
      */
     public function debug()
     {
-        $resolucaoModel = new ResolucaoModel();
-        $apostaModel = new \App\Models\ApostaModel();
+        try {
+            $resolucaoModel = new ResolucaoModel();
+            $apostaModel = new \App\Models\ApostaModel();
 
-        $jogos = $resolucaoModel->getJogosPendentes();
+            $jogos = $resolucaoModel->getJogosPendentes();
 
-        foreach ($jogos as &$jogo) {
-            $jogo['apostas'] = $apostaModel->where('jogo_id', $jogo['id'])->orderBy('criado_em', 'ASC')->findAll();
+            foreach ($jogos as &$jogo) {
+                $jogo['apostas'] = $apostaModel->where('jogo_id', $jogo['id'])->orderBy('criado_em', 'ASC')->findAll();
+            }
+
+            return $this->respond(['data' => $jogos]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro no debug de liquidação: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Erro ao carregar os dados de debug.');
         }
-
-        return $this->renderView('admin/liquidacao/debug', [
-            'title' => 'Debug Liquidação - Pimbastic',
-            'jogos' => $jogos,
-        ]);
     }
-}
+}

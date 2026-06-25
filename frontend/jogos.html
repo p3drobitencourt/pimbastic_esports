@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pimbastic Esports - Jogos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Chakra Petch"', 'sans-serif'],
+                        bebas: ['"Bebas Neue"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-1: #081019;
+            --bg-2: #132737;
+            --card: rgba(10, 20, 32, 0.7);
+            --border: rgba(255, 255, 255, 0.14);
+        }
+        body {
+            background: linear-gradient(140deg, var(--bg-1), var(--bg-2));
+            color: #f4f7fb;
+            min-height: 100vh;
+        }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="font-sans flex flex-col md:flex-row min-h-screen">
+
+    <!-- Sidebar Admin -->
+    <aside class="w-full md:w-64 bg-black/60 border-r border-white/10 p-6 flex flex-col justify-between">
+        <div>
+            <div class="font-bebas text-3xl text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 font-bold mb-8">
+                PIMBASTIC ADMIN
+            </div>
+            <div id="display-user-name" class="text-sm font-bold text-cyan-400 mb-1">...</div>
+            <div id="display-user-role" class="text-xs text-gray-500 uppercase mb-8">...</div>
+
+            <nav class="space-y-2">
+                <a href="admin-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-white/5 text-gray-400 transition-colors">Dashboard</a>
+                <a href="campeonatos.html" class="block px-3 py-2 rounded-lg hover:bg-white/5 text-gray-400 transition-colors">Campeonatos</a>
+                <a href="times.html" class="block px-3 py-2 rounded-lg hover:bg-white/5 text-gray-400 transition-colors">Times</a>
+                <a href="jogos.html" class="block px-3 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold">Jogos</a>
+                <a href="liquidacao.html" class="block px-3 py-2 rounded-lg hover:bg-white/5 text-gray-400 transition-colors">Liquidação</a>
+            </nav>
+        </div>
+        <button id="btn-logout" class="mt-8 bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg text-sm font-semibold transition-colors w-full">Sair do Sistema</button>
+    </aside>
+
+    <main class="flex-grow p-6 md:p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bebas text-cyan-400">Gerenciar Jogos</h1>
+            <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded shadow-lg transition-colors" onclick="abrirModal()">
+                + Novo Jogo
+            </button>
+        </div>
+        
+        <div id="error-alert" class="hidden mb-6"></div>
+
+        <div class="panel p-6">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-white/10 text-gray-400 uppercase tracking-wider">
+                            <th class="pb-3 px-2">Data/Hora</th>
+                            <th class="pb-3 px-2">Campeonato</th>
+                            <th class="pb-3 px-2">Confronto</th>
+                            <th class="pb-3 px-2">Status</th>
+                            <th class="pb-3 px-2 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr><td colspan="5" class="py-4 text-center text-gray-500">Carregando dados...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal de Cadastro/Edição -->
+        <div id="crud-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+            <div class="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+                <h2 id="modal-title" class="text-2xl font-bebas text-cyan-400 mb-4">Novo Jogo</h2>
+                
+                <div id="modal-error-alert" class="hidden mb-4 bg-red-500/15 border border-red-500/35 text-red-300 p-3 rounded-lg text-sm"></div>
+
+                <form id="crud-form" onsubmit="event.preventDefault(); salvarJogo();">
+                    <input type="hidden" id="jogo-id">
+                    
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2" for="jogo-campeonato">Campeonato</label>
+                        <select id="jogo-campeonato" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors" required>
+                            <option value="">Carregando...</option>
+                        </select>
+                    </div>
+
+                    <div class="flex space-x-4 mb-4">
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2" for="jogo-time-casa">Time Casa</label>
+                            <select id="jogo-time-casa" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors" required>
+                                <option value="">Carregando...</option>
+                            </select>
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2" for="jogo-time-fora">Time Fora</label>
+                            <select id="jogo-time-fora" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors" required>
+                                <option value="">Carregando...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2" for="jogo-data">Data e Hora</label>
+                        <input id="jogo-data" type="datetime-local" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors" required>
+                    </div>
+
+                    <div class="flex space-x-4 mb-4">
+                        <div class="w-1/3">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2" for="jogo-odd-casa">Odd Casa</label>
+                            <input id="jogo-odd-casa" type="number" step="0.01" min="1.01" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors" placeholder="Ex: 2.50" required>
+                        </div>
+                        <div class="w-1/3">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2" for="jogo-odd-empate">Odd Empate</label>
+                            <input id="jogo-odd-empate" type="number" step="0.01" min="1.01" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors" placeholder="Ex: 3.10" required>
+                        </div>
+                        <div class="w-1/3">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2" for="jogo-odd-fora">Odd Fora</label>
+                            <input id="jogo-odd-fora" type="number" step="0.01" min="1.01" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors" placeholder="Ex: 1.80" required>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" onclick="fecharModal()" class="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors font-semibold">Cancelar</button>
+                        <button type="submit" id="btn-save" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-colors shadow-lg">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { apiFetch, showError, hideError } from './js/api.js';
+        import { requireAuth } from './js/auth.js';
+
+        requireAuth('admin');
+
+        async function carregarLista() {
+            try {
+                // A rota "admin/jogos" usa o JogoController, mas o "admin/jogos-recentes" já traz com os JOINS de nome
+                // Para simplificar a exibição bonita com os nomes dos times, vamos usar o jogos-recentes ou similar.
+                const res = await apiFetch('/admin/jogos-recentes');
+                const list = res.data;
+                const tbody = document.getElementById('table-body');
+                
+                if (!list || list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">Nenhum registro encontrado.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = list.map(jogo => `
+                    <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <td class="py-3 px-2">${new Date(jogo.data_horario).toLocaleString('pt-BR')}</td>
+                        <td class="py-3 px-2 font-semibold text-cyan-300">${jogo.campeonato || `Camp #${jogo.campeonato_id}`}</td>
+                        <td class="py-3 px-2">${jogo.casa || `Time #${jogo.time_casa_id}`} <span class="text-gray-500 text-xs mx-1">vs</span> ${jogo.fora || `Time #${jogo.time_fora_id}`}</td>
+                        <td class="py-3 px-2">
+                            <span class="px-2 py-1 rounded text-xs uppercase ${jogo.status === 'finalizado' || jogo.status === 'liquidado' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'}">
+                                ${jogo.status}
+                            </span>
+                        </td>
+                        <td class="py-3 px-2 text-right">
+                            ${jogo.status === 'liquidado' ? 
+                                '<span class="text-gray-600 text-xs uppercase italic">Bloqueado</span>' : 
+                                `
+                                <button class="text-emerald-400 hover:text-emerald-300 text-xs uppercase px-2" onclick="abrirModal(${jogo.id}, ${jogo.campeonato_id}, ${jogo.time_casa_id}, ${jogo.time_fora_id}, '${jogo.data_horario}', ${jogo.odd_casa || 1.5}, ${jogo.odd_empate || 2.5}, ${jogo.odd_fora || 3.0})">Editar</button>
+                                <button class="text-red-400 hover:text-red-300 text-xs uppercase px-2" onclick="excluirJogo(${jogo.id})">Excluir</button>
+                                `
+                            }
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (error) {
+                showError('error-alert', error);
+                document.getElementById('table-body').innerHTML = '<tr><td colspan="5" class="py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
+            }
+        }
+
+        async function carregarDependencias() {
+            try {
+                const [resCamp, resTimes] = await Promise.all([
+                    apiFetch('/admin/campeonatos'),
+                    apiFetch('/admin/times')
+                ]);
+
+                const campeonatos = Array.isArray(resCamp.data) ? resCamp.data : resCamp;
+                const times = Array.isArray(resTimes.data) ? resTimes.data : resTimes;
+
+                const selectCamp = document.getElementById('jogo-campeonato');
+                const selectCasa = document.getElementById('jogo-time-casa');
+                const selectFora = document.getElementById('jogo-time-fora');
+
+                let campHtml = '<option value="">Selecione...</option>';
+                campeonatos.forEach(c => campHtml += `<option value="${c.id}">${c.nome}</option>`);
+                selectCamp.innerHTML = campHtml;
+
+                let timesHtml = '<option value="">Selecione...</option>';
+                times.forEach(t => timesHtml += `<option value="${t.id}">${t.nome}</option>`);
+                selectCasa.innerHTML = timesHtml;
+                selectFora.innerHTML = timesHtml;
+
+            } catch (error) {
+                console.error("Erro ao carregar selects:", error);
+            }
+        }
+
+        // --- Funções CRUD ---
+        window.abrirModal = function(id = null, campId = '', timeCasa = '', timeFora = '', dataHora = '', oddCasa = '', oddEmpate = '', oddFora = '') {
+            hideError('modal-error-alert');
+            document.getElementById('jogo-id').value = id || '';
+            document.getElementById('jogo-campeonato').value = campId;
+            document.getElementById('jogo-time-casa').value = timeCasa;
+            document.getElementById('jogo-time-fora').value = timeFora;
+            
+            document.getElementById('jogo-odd-casa').value = oddCasa;
+            document.getElementById('jogo-odd-empate').value = oddEmpate;
+            document.getElementById('jogo-odd-fora').value = oddFora;
+            
+            if(dataHora) {
+                // Formata "YYYY-MM-DD HH:mm:ss" para "YYYY-MM-DDTHH:mm"
+                const dataFormatada = dataHora.replace(' ', 'T').substring(0, 16);
+                document.getElementById('jogo-data').value = dataFormatada;
+            } else {
+                document.getElementById('jogo-data').value = '';
+            }
+
+            document.getElementById('modal-title').textContent = id ? 'Editar Jogo' : 'Novo Jogo';
+            document.getElementById('crud-modal').classList.remove('hidden');
+        };
+
+        window.fecharModal = function() {
+            document.getElementById('crud-modal').classList.add('hidden');
+        };
+
+        window.salvarJogo = async function() {
+            const id = document.getElementById('jogo-id').value;
+            const campeonato_id = document.getElementById('jogo-campeonato').value;
+            const time_casa_id = document.getElementById('jogo-time-casa').value;
+            const time_fora_id = document.getElementById('jogo-time-fora').value;
+            const data_horario = document.getElementById('jogo-data').value;
+            
+            const odd_casa = document.getElementById('jogo-odd-casa').value;
+            const odd_empate = document.getElementById('jogo-odd-empate').value;
+            const odd_fora = document.getElementById('jogo-odd-fora').value;
+            
+            const btn = document.getElementById('btn-save');
+
+            if (!campeonato_id || !time_casa_id || !time_fora_id || !data_horario || !odd_casa || !odd_empate || !odd_fora) return;
+
+            if (time_casa_id === time_fora_id) {
+                showError('modal-error-alert', { message: "O time da casa e o time de fora não podem ser iguais." });
+                return;
+            }
+
+            try {
+                btn.textContent = 'Salvando...';
+                btn.disabled = true;
+
+                const endpoint = id ? `/admin/jogos/${id}` : '/admin/jogos';
+                const method = id ? 'PUT' : 'POST';
+
+                await apiFetch(endpoint, {
+                    method: method,
+                    // Converte "YYYY-MM-DDTHH:mm" para "YYYY-MM-DD HH:mm:ss" esperado pelo BD
+                    body: JSON.stringify({ 
+                        campeonato_id, 
+                        time_casa_id, 
+                        time_fora_id, 
+                        data_horario: data_horario.replace('T', ' ') + ':00',
+                        odd_casa: parseFloat(odd_casa),
+                        odd_empate: parseFloat(odd_empate),
+                        odd_fora: parseFloat(odd_fora)
+                    })
+                });
+
+                fecharModal();
+                carregarLista();
+            } catch (error) {
+                showError('modal-error-alert', error);
+            } finally {
+                btn.textContent = 'Salvar';
+                btn.disabled = false;
+            }
+        };
+
+        window.excluirJogo = async function(id) {
+            if (!confirm('Tem certeza que deseja excluir este jogo? Apostas vinculadas a ele também poderão ser afetadas.')) return;
+
+            try {
+                await apiFetch(`/admin/jogos/${id}`, { method: 'DELETE' });
+                carregarLista();
+            } catch (error) {
+                showError('error-alert', error);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarDependencias();
+            carregarLista();
+        });
+    </script>
+</body>
+</html>

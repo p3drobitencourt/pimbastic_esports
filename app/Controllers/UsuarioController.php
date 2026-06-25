@@ -4,47 +4,47 @@ namespace App\Controllers;
 
 use App\Models\ClienteModel;
 use App\Models\UsuarioModel;
+use CodeIgniter\RESTful\ResourceController;
 
-class UsuarioController extends BaseController
+class UsuarioController extends ResourceController
 {
+    protected $format = 'json';
+
     public function index()
     {
-        $usuarioModel = new UsuarioModel();
+        try {
+            $usuarioModel = new UsuarioModel();
+            $usuarios = $usuarioModel->orderBy('id', 'DESC')->findAll();
+            
+            // Remove as senhas antes de enviar
+            foreach ($usuarios as &$u) {
+                unset($u['senha']);
+            }
 
-        return $this->renderView('admin/usuarios/index', [
-            'title' => 'Gerenciar Usuários - Pimbastic',
-            'usuarios' => $usuarioModel->paginate(10),
-            'pager' => $usuarioModel->pager,
-        ]);
+            return $this->respond(['data' => $usuarios]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao listar usuários: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível carregar os usuários.');
+        }
     }
 
-    public function create()
+    public function show($id = null)
     {
-        $perfilPreferido = strtolower(trim((string) $this->request->getGet('perfil')));
-        if (!in_array($perfilPreferido, ['admin', 'cliente'], true)) {
-            $perfilPreferido = 'cliente';
+        try {
+            $usuarioModel = new UsuarioModel();
+            $usuario = $usuarioModel->find((int) $id);
+
+            if (!$usuario) {
+                return $this->failNotFound('Usuário não encontrado.');
+            }
+
+            unset($usuario['senha']);
+
+            return $this->respond(['data' => $usuario]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao buscar usuário: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível carregar o usuário.');
         }
-
-        return $this->renderView('admin/usuarios/form', [
-            'title' => 'Novo Usuário - Pimbastic',
-            'usuario' => null,
-            'perfil_preferido' => $perfilPreferido,
-        ]);
-    }
-
-    public function edit($id)
-    {
-        $usuarioModel = new UsuarioModel();
-        $usuario = $usuarioModel->find((int) $id);
-
-        if (!$usuario) {
-            return redirect()->to('/admin/usuarios')->with('error', 'Usuário não encontrado.');
-        }
-
-        return $this->renderView('admin/usuarios/form', [
-            'title' => 'Editar Usuário #' . $id . ' - Pimbastic',
-            'usuario' => $usuario
-        ]);
     }
 
     public function store()
@@ -57,40 +57,46 @@ class UsuarioController extends BaseController
         ];
 
         if (!$this->validate($regras)) {
-            return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
         try {
             $usuarioModel = new UsuarioModel();
             $clienteId = null;
 
-            $perfil = strtolower(trim((string) $this->request->getPost('perfil')));
+            $dados = $this->request->getJSON(true);
+
+            $perfil = strtolower(trim((string) ($dados['perfil'] ?? '')));
 
             if ($perfil === 'cliente') {
                 $clienteModel = new ClienteModel();
                 $clienteModel->insert([
-                    'nome' => trim((string) $this->request->getPost('nome')),
+                    'nome' => trim((string) ($dados['nome'] ?? '')),
                     'saldo_carteira' => 0,
                 ]);
                 $clienteId = (int) $clienteModel->getInsertID();
             }
 
-            $usuarioModel->insert([
-                'nome' => trim((string) $this->request->getPost('nome')),
-                'email' => trim((string) $this->request->getPost('email')),
-                'senha' => password_hash((string) $this->request->getPost('senha'), PASSWORD_DEFAULT),
+            $novoUsuario = [
+                'nome' => trim((string) ($dados['nome'] ?? '')),
+                'email' => trim((string) ($dados['email'] ?? '')),
+                'senha' => password_hash((string) ($dados['senha'] ?? ''), PASSWORD_DEFAULT),
                 'perfil' => $perfil,
                 'cliente_id' => $clienteId,
-            ]);
+            ];
 
-            return redirect()->to('/admin/usuarios')->with('success', 'Usuário registrado com sucesso.');
+            $usuarioModel->insert($novoUsuario);
+            $novoUsuario['id'] = $usuarioModel->getInsertID();
+            unset($novoUsuario['senha']);
+
+            return $this->respondCreated(['data' => $novoUsuario]);
         } catch (\Throwable $e) {
             log_message('error', 'Erro ao salvar usuário: {error}', ['error' => $e->getMessage()]);
-            return redirect()->back()->withInput()->with('error', 'Não foi possível salvar o usuário.');
+            return $this->failServerError('Não foi possível salvar o usuário.');
         }
     }
 
-    public function update($id)
+    public function update($id = null)
     {
         $regras = [
             'nome' => 'required|min_length[3]',
@@ -99,7 +105,7 @@ class UsuarioController extends BaseController
         ];
 
         if (!$this->validate($regras)) {
-            return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
         try {
@@ -107,51 +113,64 @@ class UsuarioController extends BaseController
             $usuario = $usuarioModel->find((int) $id);
 
             if (!$usuario) {
-                return redirect()->to('/admin/usuarios')->with('error', 'Usuário não encontrado.');
+                return $this->failNotFound('Usuário não encontrado.');
             }
 
+            $dadosReq = $this->request->getJSON(true);
+
             $clienteId = $usuario['cliente_id'] ?? null;
-            $perfil = strtolower(trim((string) $this->request->getPost('perfil')));
+            $perfil = strtolower(trim((string) ($dadosReq['perfil'] ?? '')));
 
             if ($perfil === 'cliente' && !$clienteId) {
                 $clienteModel = new ClienteModel();
                 $clienteModel->insert([
-                    'nome' => trim((string) $this->request->getPost('nome')),
+                    'nome' => trim((string) ($dadosReq['nome'] ?? '')),
                     'saldo_carteira' => 0,
                 ]);
                 $clienteId = (int) $clienteModel->getInsertID();
             }
 
             $dados = [
-                'nome' => trim((string) $this->request->getPost('nome')),
-                'email' => trim((string) $this->request->getPost('email')),
+                'nome' => trim((string) ($dadosReq['nome'] ?? '')),
+                'email' => trim((string) ($dadosReq['email'] ?? '')),
                 'perfil' => $perfil,
                 'cliente_id' => $clienteId,
             ];
 
-            if ($this->request->getPost('senha')) {
-                $dados['senha'] = (string) $this->request->getPost('senha');
+            if (!empty($dadosReq['senha'])) {
+                $dados['senha'] = (string) $dadosReq['senha'];
             }
 
             $usuarioModel->atualizarUsuario((int) $id, $dados);
 
-            return redirect()->to('/admin/usuarios')->with('success', 'Usuário atualizado com sucesso.');
+            $usuarioAtualizado = $usuarioModel->find((int) $id);
+            if (isset($usuarioAtualizado['senha'])) {
+                unset($usuarioAtualizado['senha']);
+            }
+
+            return $this->respond(['data' => $usuarioAtualizado]);
         } catch (\Throwable $e) {
             log_message('error', 'Erro ao atualizar usuário: {error}', ['error' => $e->getMessage()]);
-            return redirect()->back()->withInput()->with('error', 'Não foi possível atualizar o usuário.');
+            return $this->failServerError('Não foi possível atualizar o usuário.');
         }
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
-        $usuarioModel = new UsuarioModel();
+        try {
+            $usuarioModel = new UsuarioModel();
 
-        if (!$usuarioModel->find((int) $id)) {
-            return redirect()->to('/admin/usuarios')->with('error', 'Usuário não encontrado.');
+            if (!$usuarioModel->find((int) $id)) {
+                return $this->failNotFound('Usuário não encontrado.');
+            }
+
+            $usuarioModel->delete((int) $id);
+
+            return $this->respondDeleted(['id' => (int) $id]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Erro ao remover usuário: {error}', ['error' => $e->getMessage()]);
+            return $this->failServerError('Não foi possível remover o usuário.');
         }
-
-        $usuarioModel->delete((int) $id);
-
-        return redirect()->to('/admin/usuarios')->with('success', 'Usuário removido com sucesso.');
     }
 }
+
