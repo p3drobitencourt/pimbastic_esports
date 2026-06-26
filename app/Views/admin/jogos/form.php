@@ -54,24 +54,24 @@
                 <input type="datetime-local" id="data_horario" name="data_horario" value="<?= old('data_horario') ?? ($jogo['data_horario'] ?? '') ?>" required class="w-full bg-black/40 border border-white/10 focus:border-cyan-400 rounded-xl px-4 py-3 text-white focus:outline-none transition-colors">
             </div>
 
-            <!-- Odds -->
+            <!-- Odds Iniciais (Fallback Pricing / Morning Lines) -->
             <div>
-                <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Cotações (Odds)</div>
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Cotações de Abertura (Morning Lines)</div>
                 <div class="grid grid-cols-3 gap-4">
                     <div>
-                        <label for="odd_casa" class="block text-[10px] text-emerald-400 uppercase tracking-widest mb-1 text-center font-bold">Casa</label>
+                        <label for="odd_casa" class="block text-[10px] text-emerald-400 uppercase tracking-widest mb-1 text-center font-bold">Odd Inicial (Casa)</label>
                         <input type="number" id="odd_casa" name="odd_casa" step="0.01" min="1.01" value="<?= old('odd_casa') ?? ($jogo['odd_casa'] ?? '') ?>" required placeholder="1.50" class="w-full bg-black/40 border border-white/10 focus:border-emerald-400 rounded-xl px-3 py-2.5 text-white text-center font-mono font-bold focus:outline-none transition-colors">
                     </div>
                     <div>
-                        <label for="odd_empate" class="block text-[10px] text-cyan-400 uppercase tracking-widest mb-1 text-center font-bold">Empate</label>
+                        <label for="odd_empate" class="block text-[10px] text-cyan-400 uppercase tracking-widest mb-1 text-center font-bold">Odd Inicial (Empate)</label>
                         <input type="number" id="odd_empate" name="odd_empate" step="0.01" min="1.01" value="<?= old('odd_empate') ?? ($jogo['odd_empate'] ?? '') ?>" required placeholder="2.50" class="w-full bg-black/40 border border-white/10 focus:border-cyan-400 rounded-xl px-3 py-2.5 text-white text-center font-mono font-bold focus:outline-none transition-colors">
                     </div>
                     <div>
-                        <label for="odd_fora" class="block text-[10px] text-emerald-400 uppercase tracking-widest mb-1 text-center font-bold">Fora</label>
+                        <label for="odd_fora" class="block text-[10px] text-emerald-400 uppercase tracking-widest mb-1 text-center font-bold">Odd Inicial (Fora)</label>
                         <input type="number" id="odd_fora" name="odd_fora" step="0.01" min="1.01" value="<?= old('odd_fora') ?? ($jogo['odd_fora'] ?? '') ?>" required placeholder="2.80" class="w-full bg-black/40 border border-white/10 focus:border-emerald-400 rounded-xl px-3 py-2.5 text-white text-center font-mono font-bold focus:outline-none transition-colors">
                     </div>
                 </div>
-                <span class="text-[11px] text-gray-500 mt-2 block text-center">Todas as odds devem ser maiores que 1.00</span>
+                <span class="text-[11px] text-cyan-400/80 mt-2 block text-center">Nota: Estas são apenas as odds iniciais/fallback. Com a entrada de apostas, o sistema Pari-Mutuel calculará as cotações automaticamente.</span>
             </div>
 
             <div class="flex justify-end items-center gap-4 pt-4 border-t border-white/5">

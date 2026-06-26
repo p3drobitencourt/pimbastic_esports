@@ -27,6 +27,38 @@ class ApostaModel extends Model
         'criado_em',
     ];
 
+    protected $afterInsert = ['invalidateOddsCache'];
+    protected $afterUpdate = ['invalidateOddsCache'];
+
+    protected function invalidateOddsCache(array $data)
+    {
+        $jogoId = null;
+
+        // Se estiver inserindo
+        if (isset($data['data']['jogo_id'])) {
+            $jogoId = $data['data']['jogo_id'];
+        } 
+        // Se estiver atualizando (o CodeIgniter 4 na alteração pode não trazer o jogo_id no array de update se não foi alterado)
+        elseif (isset($data['id'])) {
+            // Em caso de update, vamos precisar descobrir o jogo_id a partir da aposta
+            // Para não pesar se forem muitos dados e já que o id (ou array de IDs) vem em $data['id']
+            $ids = is_array($data['id']) ? $data['id'] : [$data['id']];
+            foreach ($ids as $apostaId) {
+                $aposta = $this->db->table('aposta')->select('jogo_id')->where('id', $apostaId)->get()->getRowArray();
+                if ($aposta) {
+                    \Config\Services::cache()->delete('odds_jogo_' . $aposta['jogo_id']);
+                }
+            }
+            return $data; // early return
+        }
+
+        if ($jogoId) {
+            \Config\Services::cache()->delete('odds_jogo_' . $jogoId);
+        }
+
+        return $data;
+    }
+
     protected $validationRules = [
         'cliente_id'     => 'required|integer',
         'jogo_id'        => 'required|integer',

@@ -54,21 +54,19 @@ export function logout() {
 }
 
 // Vincula o botão de logout se existir na tela
-document.addEventListener('DOMContentLoaded', () => {
-    const logoutBtn = document.getElementById('btn-logout');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            logout();
-        });
-    }
-    
-    // Mostra o nome do usuário logado se existir o placeholder
-    const userNameEl = document.getElementById('display-user-name');
-    const userRoleEl = document.getElementById('display-user-role');
-    const user = getUser();
-    if (user) {
-        if (userNameEl) userNameEl.textContent = user.nome;
-        if (userRoleEl) userRoleEl.textContent = user.perfil;
-    }
-});
+const logoutBtn = document.getElementById('btn-logout');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        logout();
+    });
+}
+
+// Mostra o nome do usuário logado se existir o placeholder
+const userNameEl = document.getElementById('display-user-name');
+const userRoleEl = document.getElementById('display-user-role');
+const user = getUser();
+if (user) {
+    if (userNameEl) userNameEl.textContent = user.nome;
+    if (userRoleEl) userRoleEl.textContent = user.perfil;
+}
