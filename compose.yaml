@@ -17,6 +17,15 @@ services:
     networks:
       - app-network
 
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    networks:
+      - app-network
+
   db:
     image: mysql:8.0
     environment:

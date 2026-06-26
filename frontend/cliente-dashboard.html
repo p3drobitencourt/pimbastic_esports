@@ -249,6 +249,7 @@
             }
         });
 
+
         // --- Funções de Aposta ---
         window.abrirModalAposta = function(jogoId, nomeJogo, oddCasa, oddEmpate, oddFora) {
             hideError('modal-error-alert');
@@ -319,7 +320,7 @@
         };
 
         // Init
-        document.addEventListener('DOMContentLoaded', carregarDashboard);
+        carregarDashboard();
     </script>
 </body>
 </html>

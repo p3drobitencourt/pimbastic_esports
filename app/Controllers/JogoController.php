@@ -59,9 +59,6 @@ class JogoController extends ResourceController
             'time_casa_id'  => 'required|integer',
             'time_fora_id'  => 'required|integer|differs[time_casa_id]',
             'data_horario'  => 'required',
-            'odd_casa'      => 'required|numeric|greater_than[1]',
-            'odd_empate'    => 'required|numeric|greater_than[1]',
-            'odd_fora'      => 'required|numeric|greater_than[1]'
         ];
 
         if (!$this->validate($regras)) {
@@ -87,9 +84,9 @@ class JogoController extends ResourceController
                 'time_casa_id' => (int) ($dados['time_casa_id'] ?? 0),
                 'time_fora_id' => (int) ($dados['time_fora_id'] ?? 0),
                 'data_horario' => $dataHorario,
-                'odd_casa' => (float) ($dados['odd_casa'] ?? 0),
-                'odd_empate' => (float) ($dados['odd_empate'] ?? 0),
-                'odd_fora' => (float) ($dados['odd_fora'] ?? 0),
+                'odd_casa' => 1.50,
+                'odd_empate' => 2.50,
+                'odd_fora' => 3.00,
             ];
 
             $jogoModel->save($novoJogo);
@@ -114,9 +111,6 @@ class JogoController extends ResourceController
             'time_casa_id'  => 'required|integer',
             'time_fora_id'  => 'required|integer|differs[time_casa_id]',
             'data_horario'  => 'required',
-            'odd_casa'      => 'required|numeric|greater_than[1]',
-            'odd_empate'    => 'required|numeric|greater_than[1]',
-            'odd_fora'      => 'required|numeric|greater_than[1]'
         ];
 
         if (!$this->validate($regras)) {
@@ -151,9 +145,9 @@ class JogoController extends ResourceController
                 'time_casa_id' => (int) ($dados['time_casa_id'] ?? 0),
                 'time_fora_id' => (int) ($dados['time_fora_id'] ?? 0),
                 'data_horario' => $dataHorario,
-                'odd_casa' => (float) ($dados['odd_casa'] ?? 0),
-                'odd_empate' => (float) ($dados['odd_empate'] ?? 0),
-                'odd_fora' => (float) ($dados['odd_fora'] ?? 0),
+                'odd_casa' => 1.50,
+                'odd_empate' => 2.50,
+                'odd_fora' => 3.00,
             ];
 
             $jogoModel->update((int) $id, $jogoAtualizado);

@@ -1,8 +1,8 @@
-5. Como Executar
+Como Executar
 Pré-requisitos
 Docker Desktop ou Docker Engine com o plugin Docker Compose instalado.
 
-Porta do host 8080 e 3306 desocupadas.
+Porta do host 8080, 8082 e 3306 desocupadas.
 
 Guia Passo a Passo
 Clone do Repositório:

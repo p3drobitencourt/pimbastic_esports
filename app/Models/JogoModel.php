@@ -26,17 +26,11 @@ class JogoModel extends Model
         'time_casa_id'  => 'required|integer',
         'time_fora_id'  => 'required|integer|differs[time_casa_id]',
         'data_horario'  => 'required',
-        'odd_casa'      => 'required|numeric|greater_than[1]',
-        'odd_empate'    => 'required|numeric|greater_than[1]',
-        'odd_fora'      => 'required|numeric|greater_than[1]',
     ];
 
     protected $validationMessages = [
         'time_fora_id' => [
             'differs' => 'O time visitante deve ser diferente do time da casa.',
-        ],
-        'odd_casa' => [
-            'greater_than' => 'Todas as odds devem ser maiores que 1.00.',
         ],
     ];
 
@@ -46,6 +40,7 @@ class JogoModel extends Model
      */
     protected $beforeInsert = ['normalizarDataHorario'];
     protected $beforeUpdate = ['normalizarDataHorario'];
+    protected $afterFind    = ['applyDynamicOdds'];
 
     protected function normalizarDataHorario(array $data): array
     {
@@ -55,6 +50,43 @@ class JogoModel extends Model
                 $dt .= ':00';
             }
             $data['data']['data_horario'] = $dt;
+        }
+
+        return $data;
+    }
+
+    protected function applyDynamicOdds(array $data): array
+    {
+        if (empty($data['data'])) {
+            return $data;
+        }
+
+        $calculator = new \App\Services\OddsCalculatorService();
+
+        if (isset($data['data']['id'])) { // Single result
+            $odds = $calculator->getOdds(
+                (int) $data['data']['id'],
+                (float) ($data['data']['odd_casa'] ?? 1.01),
+                (float) ($data['data']['odd_empate'] ?? 1.01),
+                (float) ($data['data']['odd_fora'] ?? 1.01)
+            );
+            $data['data']['odd_casa'] = $odds['casa'];
+            $data['data']['odd_empate'] = $odds['empate'];
+            $data['data']['odd_fora'] = $odds['fora'];
+        } elseif (is_array($data['data'])) { // Multiple results
+            foreach ($data['data'] as &$row) {
+                if (isset($row['id'])) {
+                    $odds = $calculator->getOdds(
+                        (int) $row['id'],
+                        (float) ($row['odd_casa'] ?? 1.01),
+                        (float) ($row['odd_empate'] ?? 1.01),
+                        (float) ($row['odd_fora'] ?? 1.01)
+                    );
+                    $row['odd_casa'] = $odds['casa'];
+                    $row['odd_empate'] = $odds['empate'];
+                    $row['odd_fora'] = $odds['fora'];
+                }
+            }
         }
 
         return $data;
