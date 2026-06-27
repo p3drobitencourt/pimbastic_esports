@@ -1,99 +1,126 @@
-Como Executar
-Pré-requisitos
-Docker Desktop ou Docker Engine com o plugin Docker Compose instalado.
+# Pimbastic Esports
 
-Porta do host 8080, 8082 e 3306 desocupadas.
+Plataforma web de apostas ficticias desenvolvida com CodeIgniter 4, com backend em PHP 8.2, frontend estatico servido por Nginx e banco MySQL 8.0 via Docker Compose.
 
-Guia Passo a Passo
-Clone do Repositório:
+## Visao geral
 
-Bash
-git clone <URL_DO_REPOSITORIO>
-cd pimbastic_esports
-Configuração de Variáveis de Ambiente:
-Certifique-se de preencher o arquivo .env na raiz do projeto com as chaves de infraestrutura requisitadas:
+O projeto separa a aplicacao em tres partes:
 
-Fragmento do código
+- `app/`: backend MVC do CodeIgniter 4, com controllers, models, filtros, seeds e configuracoes.
+- `frontend/`: telas estaticas servidas pelo Nginx para a experiencia publica e de cliente.
+- `database/schema.sql`: schema inicial do MySQL, com tabelas e dados base.
+
+## Requisitos
+
+- Docker Desktop ou Docker Engine com Docker Compose.
+- Porta `8080` livre para o frontend.
+- Porta `8082` livre para o backend.
+- Porta `3306` livre para o MySQL.
+
+## Configuracao
+
+Crie um arquivo `.env` na raiz do projeto com as variaveis usadas pelo `compose.yaml`:
+
+```env
 MYSQL_ROOT_PASSWORD=root
 MYSQL_DATABASE=pimbastic_esports
 MYSQL_USER=root
 MYSQL_PASSWORD=root
-Inicialização Limpa dos Containers:
-Para limpar qualquer cache ou estado anterior de volumes e subir a infraestrutura completa de forma automatizada:
+```
 
-Bash
+Se quiser alterar o acesso inicial do administrador, tambem pode definir:
+
+```env
+ADMIN_EMAIL=admin@pimbastic.local
+ADMIN_PASSWORD=admin123
+```
+
+## Como executar
+
+1. Suba a infraestrutura limpa:
+
+```bash
 docker compose down -v
 docker compose up --build -d
-Acesso ao Sistema:
-A aplicação estará acessível imediatamente via navegador no endereço:
+```
 
-Plaintext
-http://localhost:8080
-Provisionamento do Usuário Administrador (Seeder):
-Para gerar as credenciais do primeiro perfil administrativo do sistema, execute o comando interno do framework:
+2. Verifique os servicos:
 
-Bash
+```bash
+docker compose ps
+```
+
+3. Acesse a aplicacao:
+
+- Frontend publico: http://localhost:8080
+- Backend CodeIgniter: http://localhost:8082
+- MySQL: localhost:3306
+
+## Banco de dados
+
+O container do MySQL carrega automaticamente o schema em `database/schema.sql` na primeira inicializacao do volume. Esse script cria as tabelas principais e insere dados basicos para campeonato, times, jogo e cliente.
+
+Se precisar recriar tudo do zero, use `docker compose down -v` antes de subir novamente.
+
+## Seeder de administrador
+
+Depois que os containers estiverem ativos, crie o primeiro usuario admin com:
+
+```bash
 php spark db:seed AdminSeeder
-Nota: Caso as variáveis de ambiente de teste não estejam setadas, as credenciais padrão criadas serão: admin@pimbastic.local / senha: admin123.
+```
 
-6. Roteiro de Testes e Validação Tecnológica
-O roteiro de testes simula o comportamento SSR adaptativo baseado em políticas de login de usuário:
+Se as variaveis `ADMIN_EMAIL` e `ADMIN_PASSWORD` nao estiverem definidas, o seeder usa os padroes:
 
-Cenário A: Validação do Painel do Administrador
-Navegue até http://localhost:8080 (o filtro de autenticação redirecionará para a tela de login).
+- Email: `admin@pimbastic.local`
+- Senha: `admin123`
 
-Insira um e-mail que contenha o termo admin (ex: admin@pimbastic.local) e preencha qualquer senha.
+## Rotas principais
 
-Clique em Entrar no Sistema.
+As rotas do backend estao definidas em `app/Config/Routes.php` e incluem:
 
-Valide a renderização do Painel Administrativo: observe os indicadores de métricas e o menu dinâmico de gerenciamento lateral.
+- `POST /auth/login`
+- `POST /auth/register`
+- `POST /auth/logout`
+- `GET /cliente/dashboard`
+- `POST /cliente/saldo`
+- `POST /apostas`
+- `PUT /apostas/{id}`
+- `DELETE /apostas/{id}`
+- `GET /admin/dashboard`
+- `GET /admin/jogos-recentes`
+- CRUD de `campeonatos`, `times`, `jogos` e `usuarios`
+- rotinas de `liquidacao`
 
-Acesse as abas Campeonatos, Times e Usuários.
+## Estrutura do projeto
 
-Realize o teste de entrada de dados clicando em Novo Cadastro. Os formulários possuem interceptores de validação simulados que retornam banners visuais de sucesso.
+```text
+app/
+frontend/
+database/schema.sql
+public/
+compose.yaml
+Dockerfile
+README.md
+```
 
-Cenário B: Validação do Ecossistema do Cliente (Sportsbook)
-Clique em Sair no canto superior direito para limpar a sessão.
+## Notas de operacao
 
-Efetue o login utilizando um e-mail comum de cliente (ex: cliente@pimbastic.com).
+- O backend usa `public/` como document root.
+- O Apache do container `app` tem `mod_rewrite` habilitado para as rotas do CodeIgniter.
+- O frontend e o backend compartilham a rede `app-network` definida no Compose.
+- O volume `db_data` persiste os dados do MySQL entre reinicios.
 
-Confirme o acesso à interface do Sportsbook (exibindo saldo base simulado de R$ 1.500,50).
+## Desenvolvimento local
 
-Interatividade de Odds via JS: Escolha um confronto de eSports e selecione um dos mercados ("Casa", "Empate" ou "Fora"). O elemento ganhará foco neon (ciano).
+Para acompanhar logs dos servicos:
 
-Digite um valor de aposta no campo apropriado; o script JavaScript processará o cálculo em tempo real exibindo a projeção do retorno financeiro.
+```bash
+docker compose logs -f app
+docker compose logs -f frontend
+docker compose logs -f db
+```
 
-Submeta a operação clicando em Apostar para registrar a transação fictícia e verificar o histórico atualizado no rodapé.
-
-7. Evidências Técnicas de Execução
-Abaixo encontram-se os mapeamentos obrigatórios de telas exigidos como artefato de entrega:
-
-I. Containers Docker ativos e saudáveis (docker compose ps)
-II. Aplicação Web acessível via navegador em localhost
-III. Banco de Dados MySQL criado e populado via script automático de inicialização
-"""
-
-with open("README.md", "w", encoding="utf-8") as f:
-f.write(readme_content)
-
-print("README.md successfully optimized and generated.")
-
-O seu arquivo Markdown está pronto
-[file-tag: code-generated-file-0-1780439086781771750]
-
-O arquivo `README.md` foi reestruturado para eliminar redundâncias e garantir a precisão técnica arquitetural exigida pelo trabalho prático.
-
-### Ajustes Arquiteturais e Estruturais Aplicados:
-1. **Unificação de Tópicos:** Seções sobre tecnologias, execução e cenários de testes foram agrupadas logicamente, removendo repetições sobre Docker e comandos de inicialização.
-2. **Funcionamento Interno (Under the Hood):** Adição de uma seção específica detalhando o fluxo de rede isolada via `bridge` (`app-network`), a injeção do volume persistente `db_data` e a automação do schema via `/docker-entrypoint-initdb.d/`, correspondendo à exigência de detalhamento técnico.
-3. **Mapeamento de Estrutura:** O mapa de diretórios reflete agora o padrão MVC autêntico do CodeIgniter 4 integrado aos arquivos de infraestrutura (IaC).
-4. **Padronização de Comandos:** O fluxo de build limpo (`docker compose down -v` seguido de `up --build -d`) foi estabelecido como comando oficial para evitar colisões com instâncias anteriores do container MySQL.
-
-Anexe as imagens (capturas de tela do `docker compose ps`, do Front-End operando e de um `SELECT` demonstrando os dados no SGBD) e referencie-as na seção `7. Evidências Técnicas de Execução` do documento. Não esqueça de inserir também o `diagrama.png` na raiz do projeto.
-
-![Texto Alternativo](visualizacaobd.jpeg)
-![Texto Alternativo](login.jpeg)
-![Texto Alternativo](evidencias.jpeg)
-![Texto Alternativo](diagrama.png)
+Para testar o banco inicializado, consulte as tabelas criadas pelo schema ou rode um `SELECT` no MySQL depois da subida dos containers.
 
 
